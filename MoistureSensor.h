@@ -1,0 +1,20 @@
+/*
+ * MoistureSensor.h
+ *
+ *  Created on: Mar 27, 2018
+ *      Author: erkis
+ */
+
+#ifndef MOISTURESENSOR_H_
+#define MOISTURESENSOR_H_
+
+#include "Sensor.h"
+
+class MoistureSensor: public Sensor {
+public:
+	MoistureSensor(int analogPin, String name);
+	virtual ~MoistureSensor();
+	int getValue();
+};
+
+#endif /* MOISTURESENSOR_H_ */
