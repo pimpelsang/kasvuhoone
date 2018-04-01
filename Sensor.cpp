@@ -11,11 +11,9 @@
 Sensor::Sensor(int analogPin, String name) {
 	this->analogPin = analogPin;
 	this->name = name;
-	// TODO Auto-generated constructor stub
 }
 
 Sensor::~Sensor() {
-	// TODO Auto-generated destructor stub
 }
 
 int Sensor::getValue() {

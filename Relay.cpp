@@ -22,7 +22,6 @@ Relay::~Relay() {
 
 void Relay::activate() {
 	if (this->state == true) {
-		Serial.println("RELAY ALREADY ACTIVATED!");
 		return;
 	}
 	if (this->invertedLogic) {
@@ -35,7 +34,6 @@ void Relay::activate() {
 
 void Relay::deactivate() {
 	if (this->state == false) {
-		Serial.println("RELAY ALREADY DEACTIVATED!");
 		return;
 	}
 	if (this->invertedLogic) {

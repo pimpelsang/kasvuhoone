@@ -1,87 +1,70 @@
 #include <Arduino.h>
-#include <HardwareSerial.h>
-#include <SoftwareSerial.h>
-#include <WString.h>
 
-#include "TempSensor.h"
-#include "MoistureSensor.h"
 #include "LightSensor.h"
+#include "MoistureSensor.h"
+#include "Parameter.h"
 #include "Relay.h"
+#include "TempSensor.h"
+#include <EEPROM.h>
 
 #define LED_PIN (13)
-#define POT_PIN (0)
+#define EEPROM_INITIALIZED_VALUE 13
 
-int val = 0;
-SoftwareSerial gprs(7, 8);
-TempSensor temp(0, "Temperature");
-MoistureSensor moist(1, "Moisture");
-LightSensor lightsens(2, "Light");
-Relay relee(5, true);
+
+String Jsonify(String name, String data){
+	return "\"" + name + "\":\"" + data + "\"";
+}
 
 void setup() {
 	  Serial.begin(9600);
 	  Serial.println("Initialising...");
 	  delay(100); //Allow for serial print to complete.
 
+	  // CHECK LAST EEPROM ADDRESS, TO CHECK IF FIRST BOOT OR NOT
+	  Serial.println("CHECKING EEPROM LAST ADDRESS VALUE");
+
+	  bool first_boot = true;
+	  if (EEPROM.read(EEPROM.length() - 1) == EEPROM_INITIALIZED_VALUE) {
+		  first_boot = false;
+		  Serial.println("NOT FIRST BOOT");
+	  } else {
+		  Serial.println("FIRST BOOT, SET DEFAULT PARAMETER VALUES");
+		  EEPROM.write(EEPROM.length() - 1, EEPROM_INITIALIZED_VALUE);
+	  }
+
+	  // INITIALIZE PARAMETERS
+	  Parameter target_temperature("target_temp", 0, 600, 0, 1023, first_boot);
+
+	  // INITIALIZE SENSORS
+	  TempSensor temp(0, "Temperature");
+	  MoistureSensor moist(1, "Moisture");
+	  LightSensor lightsens(2, "Light");
+	  Relay relee(5, true);
+
 	  pinMode(LED_PIN,OUTPUT);
-	  gprs.begin(19200);
 	  Serial.println("Initialisation complete.");
 	  delay(100); //Allow for serial print to complete.
-}
-
-void send_command(String cmd) {
-	Serial.println("SEND CMD: " + cmd);
-	gprs.println(cmd);
-	delay(200);
-}
-
-boolean check_result(String expect) {
-	String got = "";
-	while(gprs.available()!=0) {
-		got += (char) gprs.read();
-	}
-	if (got.equals("")) {
-		Serial.println("GOT EMPTY RESPONSE");
-		return false;
-	}
-
-	if (got.indexOf(expect) == -1) {
-		Serial.println("Got wrong result: " + got);
-		return false;
-	}
-
-	return true;
-}
-
-String get_result(){
-	String got = "";
-	while(gprs.available()!=0) {
-		got += (char) gprs.read();
-	}
-	return got;
-}
 
 
-void loop() {
-	  /* Toggle the LED */
-	  digitalWrite(LED_PIN, !digitalRead(LED_PIN));
-	  Serial.println(temp.getName());
-	  Serial.println(temp.getValue());
-	  if (temp.getValue() < 600) {
-		  Serial.println("ACTIVATE RELAY!");
-		  relee.activate();
-	  } else {
-		  Serial.println("DEACTIVATE RELAY!");
-		  relee.deactivate();
+	  while (true) {
+		  /* Toggle the LED */
+		  digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+		  if (temp.getValue() < target_temperature.getParameterValue()) {
+			  relee.activate();
+		  } else {
+			  relee.deactivate();
+		  }
+		  /*
+		  Serial.println("{"
+		  	  			+ Jsonify(temp.getName(), temp.getStringValue()) + ","
+		  	  			+ Jsonify(moist.getName(), moist.getStringValue()) + ","
+		  	  			+ Jsonify(lightsens.getName(), lightsens.getStringValue())
+		  	  			+ "}");
+		  */
+		  delay(1000);
 	  }
-	  Serial.println(moist.getName());
-	  Serial.println(moist.getValue());
-	  Serial.println(moist.getStringValue());
-	  Serial.println(lightsens.getName());
-	  Serial.println(lightsens.getValue());
-	  Serial.println(lightsens.getStringValue());
-	  delay(1000);
 }
+
 
 
 

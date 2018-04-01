@@ -8,12 +8,6 @@
 #include "LightSensor.h"
 
 LightSensor::LightSensor(int analogPin, String name): Sensor(analogPin, name) {
-	// TODO Auto-generated constructor stub
-
-}
-
-LightSensor::~LightSensor() {
-	// TODO Auto-generated destructor stub
 }
 
 int LightSensor::getValue() {

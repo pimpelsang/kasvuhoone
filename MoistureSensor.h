@@ -18,7 +18,6 @@ private:
 	const String unit = "%";
 public:
 	MoistureSensor(int analogPin, String name);
-	virtual ~MoistureSensor();
 	String getStringValue();
 	int getValue();
 };

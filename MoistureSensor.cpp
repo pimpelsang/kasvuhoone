@@ -6,15 +6,8 @@
  */
 
 #include "MoistureSensor.h"
-#include "Arduino.h"
 
 MoistureSensor::MoistureSensor(int analogPin, String name): Sensor(analogPin, name) {
-	// TODO Auto-generated constructor stub
-
-}
-
-MoistureSensor::~MoistureSensor() {
-	// TODO Auto-generated destructor stub
 }
 
 int MoistureSensor::getValue() {

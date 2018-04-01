@@ -8,15 +8,12 @@
 #include "TempSensor.h"
 
 TempSensor::TempSensor(int analogPin, String name): Sensor(analogPin, name) {
-
-	// TODO Auto-generated constructor stub
-
-}
-
-TempSensor::~TempSensor() {
-	// TODO Auto-generated destructor stub
 }
 
 int TempSensor::getValue() {
 	return Sensor::getValue(); // calls base class' functio
+}
+
+String TempSensor::getStringValue() {
+	return String(this->getValue()) + this->unit;
 }

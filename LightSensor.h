@@ -9,7 +9,6 @@
 #define LIGHTSENSOR_H_
 
 #include "Sensor.h"
-#include <Arduino.h>
 
 class LightSensor: public Sensor {
 private:
@@ -17,7 +16,6 @@ private:
 	const int maxValue = 1023;
 public:
 	LightSensor(int analogPin, String name);
-	virtual ~LightSensor();
 	int getValue();
 	String getStringValue();
 };

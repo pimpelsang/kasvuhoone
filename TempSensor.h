@@ -9,14 +9,14 @@
 #define TEMPSENSOR_H_
 
 #include "Sensor.h"
-#include "Arduino.h"
 
 class TempSensor: public Sensor {
-
+private:
+	const String unit = "°C";
 public:
 	TempSensor(int analogPin, String name);
-	virtual ~TempSensor();
 	int getValue();
+	String getStringValue();
 };
 
 #endif /* TEMPSENSOR_H_ */
