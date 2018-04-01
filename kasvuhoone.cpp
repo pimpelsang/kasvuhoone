@@ -6,6 +6,7 @@
 #include "TempSensor.h"
 #include "MoistureSensor.h"
 #include "LightSensor.h"
+#include "Relay.h"
 
 #define LED_PIN (13)
 #define POT_PIN (0)
@@ -15,6 +16,7 @@ SoftwareSerial gprs(7, 8);
 TempSensor temp(0, "Temperature");
 MoistureSensor moist(1, "Moisture");
 LightSensor lightsens(2, "Light");
+Relay relee(5, true);
 
 void setup() {
 	  Serial.begin(9600);
@@ -65,10 +67,19 @@ void loop() {
 	  digitalWrite(LED_PIN, !digitalRead(LED_PIN));
 	  Serial.println(temp.getName());
 	  Serial.println(temp.getValue());
+	  if (temp.getValue() < 600) {
+		  Serial.println("ACTIVATE RELAY!");
+		  relee.activate();
+	  } else {
+		  Serial.println("DEACTIVATE RELAY!");
+		  relee.deactivate();
+	  }
 	  Serial.println(moist.getName());
 	  Serial.println(moist.getValue());
+	  Serial.println(moist.getStringValue());
 	  Serial.println(lightsens.getName());
 	  Serial.println(lightsens.getValue());
+	  Serial.println(lightsens.getStringValue());
 	  delay(1000);
 }
 

@@ -17,6 +17,9 @@ LightSensor::~LightSensor() {
 }
 
 int LightSensor::getValue() {
-	return Sensor::getValue(); // calls base class' functio
+	return float(Sensor::getValue()) / this->maxValue * 100;
 }
 
+String LightSensor::getStringValue() {
+	return String(this->getValue()) + this->unit;
+}

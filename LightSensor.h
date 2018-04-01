@@ -12,10 +12,14 @@
 #include <Arduino.h>
 
 class LightSensor: public Sensor {
+private:
+	const String unit = "%";
+	const int maxValue = 1023;
 public:
 	LightSensor(int analogPin, String name);
 	virtual ~LightSensor();
 	int getValue();
+	String getStringValue();
 };
 
 #endif /* LIGHTSENSOR_H_ */

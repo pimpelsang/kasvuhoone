@@ -11,9 +11,15 @@
 #include "Sensor.h"
 
 class MoistureSensor: public Sensor {
+
+private:
+	const int maxValue = 1023;
+	const int minValue = 280;
+	const String unit = "%";
 public:
 	MoistureSensor(int analogPin, String name);
 	virtual ~MoistureSensor();
+	String getStringValue();
 	int getValue();
 };
 
