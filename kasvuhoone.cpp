@@ -97,7 +97,7 @@ ISR(TIMER1_COMPA_vect){//timer0 interrupt 2kHz toggles pin 8
 //generates pulse wave of frequency 2kHz/2 = 1kHz (takes two cycles for full wave- toggle high then toggle low)
 	EVERY_SEC = true;
 	TIMER_SEC++;
-	if (TIMER_SEC %5 == 0) {
+	if (TIMER_SEC %60 == 0) {
 		EVERY_MIN = true;
 	}
 }
