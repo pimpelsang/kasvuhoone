@@ -1,0 +1,10 @@
+{
+	"temp1": 17.4,
+	"temp2": -5.5,
+	"humidity": 0.8,
+	"voltage": 12.4,
+	"lux": 12,
+	"pump": true,
+	"prop": false,
+	"error": "string"
+}

@@ -1,12 +1,10 @@
 #include <SoftwareSerial.h>
 #include <String.h>
 
-
 /*
 Solar power level log to internet
 Power cutoff when voltage too low
 */
-
 int reportDelayMin = 10;
 float voltage = 0;
 float minVoltage = 11.5;
@@ -45,12 +43,12 @@ void loop()
   Serial.print("Voltage:");
   Serial.println(voltage);
   
-  if (voltage > minVoltage || volgage < errorVoltage) { 
+  if (voltage > minVoltage || voltage < errorVoltage) { 
     Serial.println("power ON!");
-    relayPowerOn();
+    //relayPowerOn();
   } else {
     Serial.println("POWER OFF!!!");
-    relayPowerOff();
+    //relayPowerOff();
   }
 
   powerUpGPRS();
@@ -68,9 +66,12 @@ void loop()
   
   if (connectServer()) 
   {
+    Serial.println("connected, sending current value!");
     uploadCurrentValue();
     disconnectServer();
     sent = true;
+  } else {
+    Serial.println("failed to connect to server, aborting!");
   }
 
   powerDownGPRS();
@@ -96,11 +97,11 @@ void setupGPRS() {
 
 void waitProperSignal() {
   Serial.println("wait for proper network connection...");
-  
-  /*
+
   gprs.println("AT+CSQ"); //signal quality
   printResponse("5min Signal:");
-  delay(60000);
+  delay(3000);
+  /*
   
   gprs.println("AT+CSQ"); //signal quality
   printResponse("4min Signal:");
@@ -121,7 +122,7 @@ void waitProperSignal() {
 }
 
 void connectionSetup() {
-  Serial.println("\n\rCONNECTION start!");
+  Serial.println("\n\rconnectionSetup()!");
 
   gprs.println("ATE0\r"); //turn echo off
   delay(100);
@@ -167,26 +168,31 @@ void connectionSetup() {
 }
 
 boolean connectServer() {
-  Serial.println("\nCONNECTING to api.cosm.com");
-  gprs.println("AT+CIPSTART=\"TCP\",\"api.cosm.com\",\"80\"");
-  if (response("ERROR", 10000)) {
-     Serial.println("ERROR CONNECTING TO to cosm! aboring...\n");
+  Serial.println("\nconnectServer() to erki.pelltech.eu");
+  gprs.println("AT+CIPSTART=\"TCP\",\"erki.pelltech.eu\",\"8234\"");
+
+  command("AT+CIPSEND");
+  return true;
+  
+/*  if (response("ERROR", 10000)) {
+     Serial.println("ERROR CONNECTING! aboring...\n");
      return false;
   }
   else
   {
-    Serial.println("\nSENDING data to cosm.com");
+    Serial.println("\nSENDING data");
     gprs.flush();
     if(command("AT+CIPSEND",">", 5000)) {
       return true;
     }
   }
   return false;
+  */
 }
 
 void disconnectServer() {
   Serial.println("SENDING END\n");
-  Serial.println("CONNECTING api.cosm.com end\n");
+  Serial.println("CONNECTING erki.pelltech.eeend\n");
   delay(5000);
   Serial.println("Closing gprs");
   command("AT+CIPCLOSE", "CLOSED"); 
@@ -199,8 +205,6 @@ void disconnectServer() {
 // Functions for DATA UPLOAD
 // Emulate HTTP and use PUT command to upload temperature datapoint using Comma Seperate Value Method
 //***********************************************************************************************
-#define APIKEY         "CT3hTa7JQegJMGCfcgZdpJkRs_6SAKx4VEFzeWltWnVpTT0g" // replace your pachube api key here
-#define FEEDID         70443 // replace your feed ID
 #define USERAGENT      "Robot" // user agent is the project name
 
 void uploadCurrentValue()
@@ -208,12 +212,9 @@ void uploadCurrentValue()
   Serial.println("uploadCurrentValue()");
   gprs.flush();
   // send the HTTP PUT request:
-  gprs.print("PUT /v2/feeds/");
-  gprs.print(FEEDID);
+  gprs.print("PUT /jama/");
   gprs.println(".csv HTTP/1.1");
-  gprs.println("Host: api.cosm.com");
-  gprs.print("X-ApiKey: ");
-  gprs.println(APIKEY);
+  gprs.println("Host: erki.pelltech.eu");
   gprs.print("User-Agent: ");
   gprs.println(USERAGENT);
   gprs.println("Content-Length:7");
