@@ -1,11 +1,15 @@
 #include <Arduino.h>
+#include <EEPROM.h>
+#include <SoftwareSerial.h>
 
 #include "LightSensor.h"
 #include "MoistureSensor.h"
 #include "Parameter.h"
 #include "Relay.h"
 #include "TempSensor.h"
-#include <EEPROM.h>
+#include "Events.h"
+#include "Event.h"
+#include "SIM900.h"
 
 #define LED_PIN (13)
 #define EEPROM_INITIALIZED_VALUE 13
@@ -30,10 +34,27 @@ void setup() {
 	  if (EEPROM.read(EEPROM.length() - 1) == EEPROM_INITIALIZED_VALUE) {
 		  first_boot = false;
 		  Serial.println("NOT FIRST BOOT");
+		  // read last written event address
 	  } else {
 		  Serial.println("FIRST BOOT, SET DEFAULT PARAMETER VALUES");
 		  EEPROM.write(EEPROM.length() - 1, EEPROM_INITIALIZED_VALUE);
 	  }
+
+	  // initialize SIM900
+	  SoftwareSerial serial(7, 8);
+	  SIM900 gsm_shield(&serial);
+
+	  Serial.println("SIM900 board is ready");
+
+	  // Create Event Manager
+	  Events event_manager(first_boot);
+
+	  // register bootup event
+	  // get current time from SIM900
+	  Event bootup_event(0, gsm_shield.getCurrentTime());
+	  event_manager.writeNewEvent(bootup_event);
+
+	  event_manager.printAllEvents();
 
 	  // INITIALIZE PARAMETERS
 	  Parameter target_temperature("target_temp", 0, 600, 0, 1023, first_boot);
