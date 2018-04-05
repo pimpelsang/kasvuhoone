@@ -14,11 +14,26 @@
 class SIM900 {
 private:
 	SoftwareSerial * gsm_modem;
-	void keepGSM();
+	bool testGSM();
 	String getTimeString();
+	bool response(String expect, int wait);
+	bool command(String command);
+	bool command(String command, String expect);
+	bool command(String command, int wait);
+	bool command(String command, String expect, int wait);
+	void printResponse(String prefix);
+	String readResponse();
 public:
+	bool gprs_connected = false;
+	bool server_connected = false;
+	bool initialized = false;
 	SIM900(SoftwareSerial * serial);
 	time_t getCurrentTime();
+	bool initialize();
+	bool connectToGPRS();
+	bool connectToServer();
+	bool writeToServer(String message);
+	void printIP();
 };
 
 #endif /* SIM900_H_ */

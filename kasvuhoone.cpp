@@ -28,24 +28,30 @@ void setup() {
 	  delay(100); //Allow for serial print to complete.
 
 	  // CHECK LAST EEPROM ADDRESS, TO CHECK IF FIRST BOOT OR NOT
-	  Serial.println("CHECKING EEPROM LAST ADDRESS VALUE");
-
 	  bool first_boot = true;
 	  if (EEPROM.read(EEPROM.length() - 1) == EEPROM_INITIALIZED_VALUE) {
 		  first_boot = false;
-		  Serial.println("NOT FIRST BOOT");
-		  // read last written event address
 	  } else {
-		  Serial.println("FIRST BOOT, SET DEFAULT PARAMETER VALUES");
+		  // first boot, write initialization value to EEPROM so next boot first_boot will be false
 		  EEPROM.write(EEPROM.length() - 1, EEPROM_INITIALIZED_VALUE);
 	  }
 
 	  // initialize SIM900
 	  SoftwareSerial serial(7, 8);
 	  SIM900 gsm_shield(&serial);
+	  if (gsm_shield.initialize() == false) {
+		  Serial.println("SIM900 could not be initialized!");
+	  } else {
+		  Serial.println("SIM900 board is ready");
+		  if (gsm_shield.connectToGPRS() == true) {
+			  // successful connection to GPRS
+			  gsm_shield.printIP();
+		  } else {
+			  Serial.println("Could not connect to GPRS network!");
+		  }
+	  }
 
-	  Serial.println("SIM900 board is ready");
-
+	  /*
 	  // Create Event Manager
 	  Events event_manager(first_boot);
 
@@ -55,6 +61,7 @@ void setup() {
 	  event_manager.writeNewEvent(bootup_event);
 
 	  event_manager.printAllEvents();
+		*/
 
 	  // INITIALIZE PARAMETERS
 	  Parameter target_temperature("target_temp", 0, 600, 0, 1023, first_boot);
@@ -97,6 +104,19 @@ void setup() {
 
 		  if (EVERY_MIN == true) {
 			  EVERY_MIN = false;
+			  if (gsm_shield.gprs_connected == true) {
+				  Serial.println("Try connection to Server!");
+				  if (gsm_shield.connectToServer() == true){
+					  gsm_shield.writeToServer("{"
+							  + Jsonify(temp.getName(), temp.getStringValue()) + ","
+							  + Jsonify(moist.getName(), moist.getStringValue()) + ","
+							  + Jsonify(lightsens.getName(), lightsens.getStringValue())
+							  + "}");
+				  }
+			  } else {
+				  Serial.println("GSM SHIELD NOT INITIALIZED!");
+			  }
+
 
 
 			  if (temp.getValue() < target_temperature.getParameterValue()) {
@@ -104,18 +124,11 @@ void setup() {
 			  } else {
 				  relee.deactivate();
 			  }
-
-			  Serial.println("{"
-					  + Jsonify(temp.getName(), temp.getStringValue()) + ","
-					  + Jsonify(moist.getName(), moist.getStringValue()) + ","
-					  + Jsonify(lightsens.getName(), lightsens.getStringValue())
-					  + "}");
 		  }
 	  }
 }
 
-ISR(TIMER1_COMPA_vect){//timer0 interrupt 2kHz toggles pin 8
-//generates pulse wave of frequency 2kHz/2 = 1kHz (takes two cycles for full wave- toggle high then toggle low)
+ISR(TIMER1_COMPA_vect){// timer1 interrupt 1Hz
 	EVERY_SEC = true;
 	TIMER_SEC++;
 	if (TIMER_SEC %60 == 0) {
