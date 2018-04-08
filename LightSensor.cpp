@@ -11,7 +11,7 @@ LightSensor::LightSensor(int analogPin, String name): Sensor(analogPin, name) {
 }
 
 int LightSensor::getValue() {
-	return float(Sensor::getValue()) / this->maxValue * 100;
+	return float(Sensor::getRawValue()) / this->maxValue * 100;
 }
 
 String LightSensor::getStringValue() {

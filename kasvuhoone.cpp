@@ -10,6 +10,7 @@
 #include "Events.h"
 #include "Event.h"
 #include "SIM900.h"
+#include "Battery.h"
 
 #define LED_PIN (13)
 #define EEPROM_INITIALIZED_VALUE 13
@@ -20,6 +21,25 @@ volatile unsigned int TIMER_SEC = 0;
 
 String Jsonify(String name, String data){
 	return "\"" + name + "\":\"" + data + "\"";
+}
+
+void initializeTimer1() {
+	  cli();//stop interrupts
+
+	  //set timer1 interrupt at 1Hz
+	  TCCR1A = 0;// set entire TCCR1A register to 0
+	  TCCR1B = 0;// same for TCCR1B
+	  TCNT1  = 0;//initialize counter value to 0
+	  // set compare match register for 1hz increments
+	  OCR1A = 15624;// = (16*10^6) / (1*1024) - 1 (must be <65536)
+	  // turn on CTC mode
+	  TCCR1B |= (1 << WGM12);
+	  // Set CS12 and CS10 bits for 1024 prescaler
+	  TCCR1B |= (1 << CS12) | (1 << CS10);
+	  // enable timer compare interrupt
+	  TIMSK1 |= (1 << OCIE1A);
+
+	  sei();//allow interrupts
 }
 
 void setup() {
@@ -39,6 +59,7 @@ void setup() {
 	  // initialize SIM900
 	  SoftwareSerial serial(7, 8);
 	  SIM900 gsm_shield(&serial);
+
 	  if (gsm_shield.initialize() == false) {
 		  Serial.println("SIM900 could not be initialized!");
 	  } else {
@@ -51,7 +72,9 @@ void setup() {
 		  }
 	  }
 
-	  /*
+
+
+
 	  // Create Event Manager
 	  Events event_manager(first_boot);
 
@@ -61,7 +84,7 @@ void setup() {
 	  event_manager.writeNewEvent(bootup_event);
 
 	  event_manager.printAllEvents();
-		*/
+
 
 	  // INITIALIZE PARAMETERS
 	  Parameter target_temperature("target_temp", 0, 600, 0, 1023, first_boot);
@@ -71,28 +94,14 @@ void setup() {
 	  MoistureSensor moist(1, "Moisture");
 	  LightSensor lightsens(2, "Light");
 	  Relay relee(5, true);
+	  Battery battery(3, "Battery");
 
 	  pinMode(LED_PIN,OUTPUT);
 
-	  cli();//stop interrupts
-
-	  //set timer1 interrupt at 1Hz
-	  TCCR1A = 0;// set entire TCCR1A register to 0
-	  TCCR1B = 0;// same for TCCR1B
-	  TCNT1  = 0;//initialize counter value to 0
-	  // set compare match register for 1hz increments
-	  OCR1A = 15624;// = (16*10^6) / (1*1024) - 1 (must be <65536)
-	  // turn on CTC mode
-	  TCCR1B |= (1 << WGM12);
-	  // Set CS12 and CS10 bits for 1024 prescaler
-	  TCCR1B |= (1 << CS12) | (1 << CS10);
-	  // enable timer compare interrupt
-	  TIMSK1 |= (1 << OCIE1A);
+	  initializeTimer1();
 
 	  Serial.println("Initialization complete.");
 	  delay(100); //Allow for serial print to complete.
-
-	  sei();//allow interrupts
 
 	  while (true) {
 		  if (EVERY_SEC == true) //Once every milliseconds
@@ -104,13 +113,15 @@ void setup() {
 
 		  if (EVERY_MIN == true) {
 			  EVERY_MIN = false;
+
 			  if (gsm_shield.gprs_connected == true) {
 				  Serial.println("Try connection to Server!");
 				  if (gsm_shield.connectToServer() == true){
 					  gsm_shield.writeToServer("{"
 							  + Jsonify(temp.getName(), temp.getStringValue()) + ","
 							  + Jsonify(moist.getName(), moist.getStringValue()) + ","
-							  + Jsonify(lightsens.getName(), lightsens.getStringValue())
+							  + Jsonify(lightsens.getName(), lightsens.getStringValue()) + ","
+							  + Jsonify(battery.getName(), battery.getStringValue())
 							  + "}");
 				  }
 			  } else {

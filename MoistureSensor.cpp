@@ -11,7 +11,7 @@ MoistureSensor::MoistureSensor(int analogPin, String name): Sensor(analogPin, na
 }
 
 int MoistureSensor::getValue() {
-	return 100 - ((float(Sensor::getValue()) - this->minValue)/(this->maxValue - this->minValue) * 100);
+	return 100 - ((float(Sensor::getRawValue()) - this->minValue)/(this->maxValue - this->minValue) * 100);
 }
 
 String MoistureSensor::getStringValue() {

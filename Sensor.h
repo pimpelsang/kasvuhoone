@@ -19,7 +19,7 @@ private:
 public:
 	Sensor(int analogPin, String name);
 	virtual ~Sensor();
-	virtual int getValue();
+	int getRawValue();
 	String getName();
 };
 

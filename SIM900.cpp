@@ -47,60 +47,6 @@ bool SIM900::initialize() {
 	return false;
 }
 
-bool SIM900::command(String command) {
-	return this->command(command, "OK");
-}
-
-bool SIM900::command(String command, int wait){
-	return this->command(command, "OK", wait);
-}
-
-bool SIM900::command(String command, String expect) {
-	return this->command(command, expect, 200);
-}
-
-bool SIM900::command(String command, String expect, int wait) {
-	Serial.println("Writing command:");
-	Serial.println(command);
-	this->gsm_modem->println(command);
-	return this->response(expect, wait);
-}
-
-bool SIM900::response(String expect, int wait) {
-	delay(wait);
-    String got = this->readResponse();
-
-    //check response
-    if (got.equals("")) {
-      Serial.println(" response().no response!");
-      return false;
-    }
-
-    if (got.indexOf(expect) == -1) {
-      Serial.println(" response().no match! got: "+got);
-      return false;
-    }
-
-    return true;
-}
-
-void SIM900::printResponse(String prefix) {
-  Serial.print(prefix);
-  delay(100);
-  while(this->gsm_modem->available()!=0) {
-      Serial.write((char)this->gsm_modem->read());
-  }
-}
-
-String SIM900::readResponse(){
-	String got = "";
-	delay(100);
-	while(this->gsm_modem->available()!=0) {
-		got += (char) this->gsm_modem->read();
-	}
-	return got;
-}
-
 bool SIM900::testGSM()
 {
 	// test if GSM shield is active, if not call powerup
@@ -217,4 +163,58 @@ bool SIM900::writeToServer(String message) {
 		return true;
 	}
 	return false;
+}
+
+bool SIM900::command(String command) {
+	return this->command(command, "OK");
+}
+
+bool SIM900::command(String command, int wait){
+	return this->command(command, "OK", wait);
+}
+
+bool SIM900::command(String command, String expect) {
+	return this->command(command, expect, 200);
+}
+
+bool SIM900::command(String command, String expect, int wait) {
+	Serial.println("Writing command:");
+	Serial.println(command);
+	this->gsm_modem->println(command);
+	return this->response(expect, wait);
+}
+
+bool SIM900::response(String expect, int wait) {
+	delay(wait);
+    String got = this->readResponse();
+
+    //check response
+    if (got.equals("")) {
+      Serial.println(" response().no response!");
+      return false;
+    }
+
+    if (got.indexOf(expect) == -1) {
+      Serial.println(" response().no match! got: "+got);
+      return false;
+    }
+
+    return true;
+}
+
+void SIM900::printResponse(String prefix) {
+  Serial.print(prefix);
+  delay(100);
+  while(this->gsm_modem->available()!=0) {
+      Serial.write((char)this->gsm_modem->read());
+  }
+}
+
+String SIM900::readResponse(){
+	String got = "";
+	delay(100);
+	while(this->gsm_modem->available()!=0) {
+		got += (char) this->gsm_modem->read();
+	}
+	return got;
 }

@@ -11,7 +11,7 @@ TempSensor::TempSensor(int analogPin, String name): Sensor(analogPin, name) {
 }
 
 int TempSensor::getValue() {
-	return Sensor::getValue(); // calls base class' functio
+	return Sensor::getRawValue(); // calls base class' functio
 }
 
 String TempSensor::getStringValue() {

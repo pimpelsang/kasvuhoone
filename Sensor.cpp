@@ -16,7 +16,7 @@ Sensor::Sensor(int analogPin, String name) {
 Sensor::~Sensor() {
 }
 
-int Sensor::getValue() {
+int Sensor::getRawValue() {
 	return analogRead(this->analogPin);
 }
 
