@@ -76,18 +76,15 @@ void setup() {
 		  }
 	  }
 
-
-
-
 	  // Create Event Manager
 	  Events event_manager(first_boot);
 
 	  // register bootup event
 	  // get current time from SIM900
-	  Event bootup_event(0, gsm_shield.getCurrentTime());
+	  Event bootup_event(EVENT_BOOTUP, gsm_shield.getCurrentTime());
 	  event_manager.writeNewEvent(bootup_event);
 
-	  event_manager.printAllEvents();
+	  Serial.println(event_manager.getEventsString());
 
 
 	  // INITIALIZE PARAMETERS

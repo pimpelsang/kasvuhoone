@@ -71,3 +71,19 @@ void Events::printAllEvents(){
 		event.printEventString();
 	}
 }
+
+String Events::getEventsString(){
+	String events_string = "";
+	for (char i=0; i < EVENTS_COUNT; i++) {
+		Event event = this->getEventByOffset(i);
+		if (event.event_number == 255) {
+			// no more filled events found
+			break;
+		}
+		if (i != 0) {
+			events_string += ",";
+		}
+		events_string += event.getEventString();
+	}
+	return events_string;
+}

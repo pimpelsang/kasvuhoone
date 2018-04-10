@@ -10,6 +10,10 @@
 #ifndef EVENTS_H_
 #define EVENTS_H_
 
+#define EVENT_BOOTUP 0
+#define EVENT_RELAY_ON 1
+#define EVENT_RELAY_OFF 2
+
 #define EVENTS_START_ADDRESS 100
 #define EVENT_OFFSET_ADDRESS 99
 #define EVENTS_COUNT 10
@@ -33,6 +37,7 @@ public:
 	Event getEventByOffset(unsigned char offset);
 	void writeNewEvent(Event event);
 	void printAllEvents();
+	String getEventsString();
 };
 
 

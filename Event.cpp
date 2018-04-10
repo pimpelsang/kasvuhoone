@@ -20,3 +20,7 @@ void Event::printEventString(){
 	Serial.println(this->event_time);
 }
 
+String Event::getEventString() {
+	return String(this->event_number) + ":" + String(this->event_time);
+}
+
