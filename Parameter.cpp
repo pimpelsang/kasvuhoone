@@ -26,7 +26,11 @@ int Parameter::getParameterValue() {
 	return this->value;
 }
 
-void Parameter::setParameterValue(int value) {
+String Parameter::getParameterString() {
+	return this->name + ":" + String(this->value);
+}
+
+bool Parameter::setParameterValue(int value) {
 	if (this->max_value >= value && this->min_value <= value) {
 		Serial.println("SET PAR VALUE!");
 		int current_val;
@@ -35,6 +39,9 @@ void Parameter::setParameterValue(int value) {
 			EEPROM.put(this->address, value);
 		}
 		this->value = value;
+		return true;
+	} else {
+		return false;
 	}
 }
 

@@ -21,7 +21,8 @@ private:
 public:
 	Parameter(String name, int address, int default_value, int min_value, int max_value, bool first_boot);
 	int getParameterValue();
-	void setParameterValue(int value);
+	bool setParameterValue(int value);
+	String getParameterString();
 };
 
 #endif /* PARAMETER_H_ */

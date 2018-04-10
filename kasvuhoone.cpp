@@ -86,10 +86,17 @@ void setup() {
 
 	  Serial.println(event_manager.getEventsString());
 
+	  const int parameters_count = 2;
 
 	  // INITIALIZE PARAMETERS
 	  Parameter relay_on_moisture_percent("on_moisture", 0 * sizeof(int), 10, 0, 100, first_boot);
 	  Parameter relay_off_moisture_percent("off_moisture", 1 * sizeof(int), 30, 0, 100, first_boot);
+	  Parameter parameters_list[parameters_count] = {relay_on_moisture_percent, relay_off_moisture_percent};
+
+	  Serial.println("Parameters list: ");
+	  for (unsigned char i; i < parameters_count; i++) {
+		  Serial.println(parameters_list[i].getParameterString());
+	  }
 	  // INITIALIZE SENSORS
 	  TempSensor temp(0, "Temperature");
 	  MoistureSensor moist(1, "Moisture");
