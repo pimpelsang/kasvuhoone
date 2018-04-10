@@ -20,9 +20,9 @@ Relay::~Relay() {
 	// TODO Auto-generated destructor stub
 }
 
-void Relay::activate() {
+bool Relay::activate() {
 	if (this->state == true) {
-		return;
+		return false;
 	}
 	if (this->invertedLogic) {
 		digitalWrite(this->digitalPin, LOW);
@@ -30,11 +30,12 @@ void Relay::activate() {
 		digitalWrite(this->digitalPin, HIGH);
 	}
 	this->state = true;
+	return true;
 }
 
-void Relay::deactivate() {
+bool Relay::deactivate() {
 	if (this->state == false) {
-		return;
+		return false;
 	}
 	if (this->invertedLogic) {
 		digitalWrite(this->digitalPin, HIGH);
@@ -42,6 +43,7 @@ void Relay::deactivate() {
 		digitalWrite(this->digitalPin, LOW);
 	}
 	this->state = false;
+	return true;
 }
 
 bool Relay::getState() {

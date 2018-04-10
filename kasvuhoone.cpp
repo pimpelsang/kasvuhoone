@@ -12,12 +12,16 @@
 #include "SIM900.h"
 #include "Battery.h"
 
-#define LED_PIN (13)
+#define HEARTBEAT_LED_PIN (13)
 #define EEPROM_INITIALIZED_VALUE 13
 
 volatile bool EVERY_SEC = false;
 volatile bool EVERY_MIN = false;
 volatile unsigned int TIMER_SEC = 0;
+
+unsigned char relay_on_counter = 0;
+unsigned char relay_off_counter = 0;
+#define RELAY_TRIGGER_COUNT 5
 
 String Jsonify(String name, String data){
 	return "\"" + name + "\":\"" + data + "\"";
@@ -87,8 +91,8 @@ void setup() {
 
 
 	  // INITIALIZE PARAMETERS
-	  Parameter target_temperature("target_temp", 0, 600, 0, 1023, first_boot);
-
+	  Parameter relay_on_moisture_percent("on_moisture", 0 * sizeof(int), 10, 0, 100, first_boot);
+	  Parameter relay_off_moisture_percent("off_moisture", 1 * sizeof(int), 30, 0, 100, first_boot);
 	  // INITIALIZE SENSORS
 	  TempSensor temp(0, "Temperature");
 	  MoistureSensor moist(1, "Moisture");
@@ -96,7 +100,7 @@ void setup() {
 	  Relay relee(5, true);
 	  Battery battery(3, "Battery");
 
-	  pinMode(LED_PIN,OUTPUT);
+	  pinMode(HEARTBEAT_LED_PIN,OUTPUT);
 
 	  initializeTimer1();
 
@@ -108,7 +112,7 @@ void setup() {
 		  {
 			  EVERY_SEC = false;
 			  /* Toggle the LED */
-			  digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+			  digitalWrite(HEARTBEAT_LED_PIN, !digitalRead(HEARTBEAT_LED_PIN));
 		  }
 
 		  if (EVERY_MIN == true) {
@@ -130,10 +134,31 @@ void setup() {
 
 
 
-			  if (temp.getValue() < target_temperature.getParameterValue()) {
-				  relee.activate();
-			  } else {
-				  relee.deactivate();
+			  if (temp.getValue() < relay_on_moisture_percent.getParameterValue()) {
+				  relay_on_counter++;
+				  relay_off_counter = 0;
+				  if (relay_on_counter > RELAY_TRIGGER_COUNT) {
+					  relay_on_counter = 0;
+					  if (relee.activate()) {
+						  // register relay ON event
+						  // get current time from SIM900
+						  Event relay_on_event(EVENT_RELAY_ON, gsm_shield.getCurrentTime());
+						  event_manager.writeNewEvent(relay_on_event);
+					  }
+				  }
+			  } else if (temp.getValue() >= relay_off_moisture_percent.getParameterValue()){
+				  relay_on_counter = 0;
+				  relay_off_counter++;
+				  if (relay_off_counter > RELAY_TRIGGER_COUNT) {
+					  relay_off_counter = 0;
+
+					  if (relee.deactivate()) {
+						  // register relay OFF event
+						  // get current time from SIM900
+						  Event relay_off_event(EVENT_RELAY_OFF, gsm_shield.getCurrentTime());
+						  event_manager.writeNewEvent(relay_off_event);
+					  }
+				  }
 			  }
 		  }
 	  }

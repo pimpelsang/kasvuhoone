@@ -17,8 +17,8 @@ public:
 	bool getState();
 	Relay(int digitalPin, bool invertedLogic);
 	virtual ~Relay();
-	void activate();
-	void deactivate();
+	bool activate();
+	bool deactivate();
 };
 
 #endif /* RELAY_H_ */
