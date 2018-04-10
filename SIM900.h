@@ -32,6 +32,7 @@ public:
 	bool initialize();
 	bool connectToGPRS();
 	bool connectToServer();
+	bool disconnectFromServer();
 	bool writeToServer(String message);
 	void printIP();
 };

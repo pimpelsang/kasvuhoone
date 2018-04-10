@@ -124,14 +124,13 @@ void setup() {
 							  + Jsonify(lightsens.getName(), lightsens.getStringValue()) + ","
 							  + Jsonify(battery.getName(), battery.getStringValue())
 							  + "}");
+					  gsm_shield.disconnectFromServer();
 				  }
 			  } else {
 				  Serial.println("GSM SHIELD NOT INITIALIZED!");
 			  }
 
-
-
-			  if (temp.getValue() < relay_on_moisture_percent.getParameterValue()) {
+			  if (moist.getValue() < relay_on_moisture_percent.getParameterValue()) {
 				  relay_on_counter++;
 				  relay_off_counter = 0;
 				  if (relay_on_counter > RELAY_TRIGGER_COUNT) {
@@ -143,7 +142,7 @@ void setup() {
 						  event_manager.writeNewEvent(relay_on_event);
 					  }
 				  }
-			  } else if (temp.getValue() >= relay_off_moisture_percent.getParameterValue()){
+			  } else if (moist.getValue() >= relay_off_moisture_percent.getParameterValue()){
 				  relay_on_counter = 0;
 				  relay_off_counter++;
 				  if (relay_off_counter > RELAY_TRIGGER_COUNT) {

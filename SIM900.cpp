@@ -49,7 +49,7 @@ bool SIM900::initialize() {
 
 bool SIM900::testGSM()
 {
-	// test if GSM shield is active, if not call powerup
+	// test if GSM shield is active
 	this->gsm_modem->println("AT+CPAS"); //here we check SIM900 activity
 	int char_count=0;
 	char inchar;
@@ -146,14 +146,27 @@ bool SIM900::connectToServer() {
 	// if (this->command("AT+CIPSTART=\"TCP\",\"erki.pelltech.eu\",\"8234\"", 5000) == true){
 	if (this->command("AT+CIPSTART=\"TCP\",\"kasvuhoone-echo.herokuapp.com\",\"80\"", 5000) == true){
 		this->server_connected = true;
+		Serial.println("Connected to server!");
 		return true;
 	} else {
-		this->command("AT+CIPCLOSE", "CLOSE OK", 5000);
+		this->disconnectFromServer();
+		return false;
+	}
+}
+
+bool SIM900::disconnectFromServer() {
+	if (this->command("AT+CIPCLOSE", "CLOSE OK", 5000)) {
+		this->server_connected = false;
+		Serial.println("Disconnected from server!");
+		return true;
+	} else {
 		return false;
 	}
 }
 
 bool SIM900::writeToServer(String message) {
+	Serial.println("Writing message to server: ");
+	Serial.println(message);
 	if (this->command("AT+CIPSEND", ">") == true){
 		this->gsm_modem->println(message);
 		delay(300);
