@@ -81,8 +81,9 @@ void setup() {
 
 	  // register bootup event
 	  // get current time from SIM900
-	  Event bootup_event(EVENT_BOOTUP, gsm_shield.getCurrentTime());
-	  event_manager.writeNewEvent(bootup_event);
+	  Event* bootup_event = new Event(EVENT_BOOTUP, gsm_shield.getCurrentTime());
+	  event_manager.writeNewEvent(*bootup_event);
+	  delete bootup_event;
 
 	  Serial.println(event_manager.getEventsString());
 
@@ -94,7 +95,7 @@ void setup() {
 	  Parameter parameters_list[parameters_count] = {relay_on_moisture_percent, relay_off_moisture_percent};
 
 	  Serial.println("Parameters list: ");
-	  for (unsigned char i; i < parameters_count; i++) {
+	  for (unsigned char i=0; i < parameters_count; i++) {
 		  Serial.println(parameters_list[i].getParameterString());
 	  }
 	  // INITIALIZE SENSORS
@@ -140,11 +141,12 @@ void setup() {
 			  if (moist.getValue() < relay_on_moisture_percent.getParameterValue()) {
 				  relay_on_counter++;
 				  relay_off_counter = 0;
-				  if (relay_on_counter > RELAY_TRIGGER_COUNT) {
+				  if (relay_on_counter >= RELAY_TRIGGER_COUNT) {
 					  relay_on_counter = 0;
 					  if (relee.activate()) {
 						  // register relay ON event
 						  // get current time from SIM900
+						  Serial.println("RELAY ACTIVATED");
 						  Event relay_on_event(EVENT_RELAY_ON, gsm_shield.getCurrentTime());
 						  event_manager.writeNewEvent(relay_on_event);
 					  }
@@ -152,12 +154,13 @@ void setup() {
 			  } else if (moist.getValue() >= relay_off_moisture_percent.getParameterValue()){
 				  relay_on_counter = 0;
 				  relay_off_counter++;
-				  if (relay_off_counter > RELAY_TRIGGER_COUNT) {
+				  if (relay_off_counter >= RELAY_TRIGGER_COUNT) {
 					  relay_off_counter = 0;
 
 					  if (relee.deactivate()) {
 						  // register relay OFF event
 						  // get current time from SIM900
+						  Serial.println("RELAY DEACTIVATED");
 						  Event relay_off_event(EVENT_RELAY_OFF, gsm_shield.getCurrentTime());
 						  event_manager.writeNewEvent(relay_off_event);
 					  }
@@ -171,6 +174,7 @@ ISR(TIMER1_COMPA_vect){// timer1 interrupt 1Hz
 	EVERY_SEC = true;
 	TIMER_SEC++;
 	if (TIMER_SEC %60 == 0) {
+	//if (TIMER_SEC %10 == 0) {
 		EVERY_MIN = true;
 	}
 }
