@@ -31,12 +31,10 @@ bool SIM900::initialize() {
 	while (retry_count > 0) {
 		if (this->testGSM() == true) {
 			this->initialized = true;
-			if (this->command("ATE0") == false){
+			if (this->command(F("ATE0")) == false){
 				//turn echo off
-				Serial.println("Could not turn echo off!");
 				continue;
 			}
-			Serial.println("ECHO IS TURNED OFF!");
 			return true;
 		} else {
 			retry_count--;
@@ -50,7 +48,7 @@ bool SIM900::initialize() {
 bool SIM900::testGSM()
 {
 	// test if GSM shield is active
-	this->gsm_modem->println("AT+CPAS"); //here we check SIM900 activity
+	this->gsm_modem->println(F("AT+CPAS")); //here we check SIM900 activity
 	int char_count=0;
 	char inchar;
 	for (int k = 0; k < 5000; k++) {
@@ -67,25 +65,31 @@ bool SIM900::testGSM()
 	}
 }
 
-String SIM900::getTimeString() {
-	// AT+CCLK? returns string 18/04/03,09:10:26
-	String stringOne = "";
-	String stringTime = "";
+bool SIM900::getTimeString(char* buf, const int buf_size) {
+	// AT+CCLK? returns string +CCLK: "18/04/03,09:10:26
+	char stringone[30] = "";
 	char inchar;
-	this->gsm_modem->println("AT+CCLK?");
+	this->gsm_modem->flush();
+	this->gsm_modem->println(F("AT+CCLK?"));
 	delay(100);
-	while(this->gsm_modem->available()){
+	int index = 0;
+	while(this->gsm_modem->available() && index < 30 - 1){
 		inchar = this->gsm_modem->read();
-		stringOne.concat(inchar);
+		stringone[index] = inchar;
+		index++;
 	}
+	stringone[index] = '\0';
 
-	for (int s=0; s<(stringOne.length()-6); s++) {
-		if (stringOne.substring(s,s+6) == "+CCLK:")
-		{
-			stringTime = (stringOne.substring(s+8,s+25));
-		}
+	char *pch = strstr(stringone, "+CCLK:");
+
+	if(pch)
+	{
+	    snprintf(buf, buf_size, "%s", pch + 8);
+	    return true;
+	} else {
+		Serial.println(F("CCLK NOT FOUND"));
+		return false;
 	}
-	return stringTime;
 }
 
 // converts two characters from date string into a two digit decimal value
@@ -99,35 +103,38 @@ time_t SIM900::getCurrentTime() {
 		return 0;
 	}
 
-	String stringTime = this->getTimeString();
-
-	int year = dateToDecimal(&stringTime[0]);
-	int month = dateToDecimal(&stringTime[3]) ;
-	int day = dateToDecimal(&stringTime[6]) ;
-	int hour = dateToDecimal(&stringTime[9]) ;
-	int minute = dateToDecimal(&stringTime[12]) ;
-	int second = dateToDecimal(&stringTime[15]) ;
-	setTime(hour,minute,second,day,month,year); // set arduino time library time so correct time_t object will be returned with now()
-	return now();
+	char timebuf[20];
+	if (this->getTimeString(timebuf, 20)){
+		int year = dateToDecimal(&timebuf[0]);
+		int month = dateToDecimal(&timebuf[3]) ;
+		int day = dateToDecimal(&timebuf[6]) ;
+		int hour = dateToDecimal(&timebuf[9]) ;
+		int minute = dateToDecimal(&timebuf[12]) ;
+		int second = dateToDecimal(&timebuf[15]) ;
+		setTime(hour,minute,second,day,month,year); // set arduino time library time so correct time_t object will be returned with now()
+		return now();
+	} else {
+		return 0;
+	}
 }
 
 bool SIM900::connectToGPRS(){
+	this->gsm_modem->flush();
 	// first test current connection status
-	if (this->command("AT+CIFSR", "ERROR", 1000) == false){
+	if (this->command(F("AT+CIFSR"), "ERROR", 1000) == false){
 		// got IP instead of ERROR, connect to GPRS not needed!
 		this->gprs_connected = true;
 		return true;
 	}
-	Serial.print("Connecting to GRPS Network");
-	this->command("AT+CGATT=1"); // attach to GPRS Service
+	this->command(F("AT+CGATT=1")); // attach to GPRS Service
 	delay(3000);
-	this->command("AT+CIPMUX=0"); //We only want a single IP connection
-	this->command("AT+CIPMODE=0"); //Selecting Normal Mode
-	this->command("AT+CGDCONT=1,\"IP\",\"internet.emt.ee\"");
+	this->command(F("AT+CIPMUX=0")); //We only want a single IP connection
+	this->command(F("AT+CIPMODE=0")); //Selecting Normal Mode
+	this->command(F("AT+CGDCONT=1,\"IP\",\"internet.emt.ee\""));
 	delay(2000);
-	this->command("AT+CSTT=\"internet.emt.ee\",\"\",\"\"", 3000); //Start Task and set Access Point Name
+	this->command(F("AT+CSTT=\"internet.emt.ee\",\"\",\"\""), 3000); //Start Task and set Access Point Name
 	delay(1000);
-	if (this->command("AT+CIICR", 10000) == false) { // create wireless connection to GPRS (should get IP after this)
+	if (this->command(F("AT+CIICR"), 15000) == false) { // create wireless connection to GPRS (should get IP after this)
 		this->gprs_connected = false;
 		return false;
 	}
@@ -136,86 +143,106 @@ bool SIM900::connectToGPRS(){
 }
 
 void SIM900::printIP() {
-	this->gsm_modem->println("AT+CIFSR");
+	this->gsm_modem->println(F("AT+CIFSR"));
 	delay(1000);
 	this->printResponse("IP:");
 }
 
 bool SIM900::connectToServer() {
-	// this->command("AT+CIPSTART=\"TCP\",\"beta.pelltech.eu\",\"8236\"", 5000);
-	// if (this->command("AT+CIPSTART=\"TCP\",\"erki.pelltech.eu\",\"8234\"", 5000) == true){
-	if (this->command("AT+CIPSTART=\"TCP\",\"kasvuhoone-echo.herokuapp.com\",\"80\"", 5000) == true){
-		this->server_connected = true;
-		Serial.println("Connected to server!");
-		return true;
+	//this->gsm_modem->println(F("AT+CIPSTART=\"TCP\",\"erki.pelltech.eu\",\"8234\""));
+	this->gsm_modem->println(F("AT+CIPSTART=\"TCP\",\"kasvuhoone-echo.herokuapp.com\",\"80\""));
+	delay(5000);
+	char response_buf[20] = "";
+	this->readResponseToBuff(response_buf, 20);
+	Serial.println(response_buf);
+	if (strncmp(response_buf, "OK", 20) == 0) {
+		this->readResponseToBuff(response_buf, 20);
+		Serial.println(response_buf);
+		if (strncmp(response_buf, "CONNECT OK", 20) == 0) {
+			return true;
+		} else if (strncmp(response_buf, "STATE: TCP CLOSED", 20) == 0) {
+			return false;
+		} else {
+			return false;
+		}
+	} else if (strncmp(response_buf, "ERROR", 20) == 0) {
+		this->readResponseToBuff(response_buf, 20);
+		Serial.println(response_buf);
+		if (strncmp(response_buf, "ALREADY CONNECT", 20) == 0) {
+			return true;
+		} else {
+			return false;
+		}
 	} else {
-		this->disconnectFromServer();
 		return false;
 	}
 }
 
 bool SIM900::disconnectFromServer() {
-	if (this->command("AT+CIPCLOSE", "CLOSE OK", 5000)) {
+	if (this->command(F("AT+CIPCLOSE"), "CLOSE OK", 5000)) {
 		this->server_connected = false;
-		Serial.println("Disconnected from server!");
 		return true;
 	} else {
 		return false;
 	}
 }
 
-bool SIM900::writeToServer(String message) {
-	Serial.println("Writing message to server: ");
-	Serial.println(message);
-	if (this->command("AT+CIPSEND", ">") == true){
-		this->gsm_modem->println(message);
-		delay(300);
+void SIM900::writeJsonToServer(JsonObject* json) {
+	Serial.print(F("Msg to server: "));
+	json->printTo(Serial);
+	if (this->command(F("AT+CIPSEND"), "> ") == true){
+
+		this->gsm_modem->flush();
+		this->gsm_modem->print(F("PUT /"));
+		this->gsm_modem->println(F(" HTTP/1.1"));
+		this->gsm_modem->println(F("Host: kasvuhoone-echo.herokuapp.com"));
+		this->gsm_modem->println(F("Connection: close"));
+		this->gsm_modem->println(F("User-Agent: Kasvuhoone"));
+		this->gsm_modem->println(F("Content-Type: application/json"));
+		this->gsm_modem->print(F("Content-Length: "));
+		this->gsm_modem->println(json->measureLength());
+		this->gsm_modem->println();
+		json->printTo(*this->gsm_modem);
 		this->gsm_modem->write(byte(26));
-		delay(2000);
-		this->printResponse("SERVER RESPONSE: ");
-		return true;
 	}
-	return false;
 }
 
-bool SIM900::command(String command) {
+bool SIM900::command(const __FlashStringHelper *command) {
 	return this->command(command, "OK");
 }
 
-bool SIM900::command(String command, int wait){
+bool SIM900::command(const __FlashStringHelper *command, int wait){
 	return this->command(command, "OK", wait);
 }
 
-bool SIM900::command(String command, String expect) {
+bool SIM900::command(const __FlashStringHelper *command, const char* expect) {
 	return this->command(command, expect, 200);
 }
 
-bool SIM900::command(String command, String expect, int wait) {
-	Serial.println("Writing command:");
+bool SIM900::command(const __FlashStringHelper* command, const char* expect, int wait) {
+	Serial.print(F("command:"));
 	Serial.println(command);
+	this->gsm_modem->flush();
 	this->gsm_modem->println(command);
 	return this->response(expect, wait);
 }
 
-bool SIM900::response(String expect, int wait) {
+bool SIM900::response(const char* expect, int wait) {
 	delay(wait);
-    String got = this->readResponse();
-
-    //check response
-    if (got.equals("")) {
-      Serial.println(" response().no response!");
-      return false;
-    }
-
-    if (got.indexOf(expect) == -1) {
-      Serial.println(" response().no match! got: "+got);
-      return false;
-    }
-
-    return true;
+	char buf[20] = "";
+	this->readResponseToBuff(buf, 20);
+	if (strncmp(buf, expect, 20) == 0) {
+		return true;
+	} else {
+		Serial.print(F("wanted: "));
+		Serial.println(expect);
+		Serial.print(F("got: "));
+		Serial.println(buf);
+		return false;
+	}
 }
 
-void SIM900::printResponse(String prefix) {
+void SIM900::printResponse(const char* prefix) {
   Serial.print(prefix);
   delay(100);
   while(this->gsm_modem->available()!=0) {
@@ -223,11 +250,28 @@ void SIM900::printResponse(String prefix) {
   }
 }
 
-String SIM900::readResponse(){
-	String got = "";
-	delay(100);
-	while(this->gsm_modem->available()!=0) {
-		got += (char) this->gsm_modem->read();
+void SIM900::readResponseToBuff(char * buf, const int buf_size) {
+	/*
+	 * GSM MODEM RESPONSE
+	 * 1) \r\n
+	 * 2) RESPONSE
+	 * 3) \r\n
+	 */
+	unsigned char index = 0;
+	bool got_line_feed_once = false;
+	while (this->gsm_modem->available() != 0 && index < buf_size - 1) {
+		char received_char = this->gsm_modem->read();
+		if (received_char == '\n') {
+			if (got_line_feed_once) {
+				break;
+			}
+			got_line_feed_once = true;
+		} else if (received_char == '\r') {
+
+		} else {
+			buf[index] = received_char;
+			index++;
+		}
 	}
-	return got;
+	buf[index] = '\0';
 }

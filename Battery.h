@@ -12,13 +12,12 @@
 
 class Battery: public Sensor {
 private:
-	const String unit = "V";
 	const unsigned char maxVoltage = 15;
 	const int maxValue = 1023;
 public:
-	Battery(int analogPin, String name);
+	Battery(int analogPin, const char* name);
 	float getValue();
-	String getStringValue();
+	void getStringValue(char* buf, int buf_size);
 };
 
 

@@ -12,12 +12,11 @@
 
 class LightSensor: public Sensor {
 private:
-	const String unit = "%";
 	const int maxValue = 1023;
 public:
-	LightSensor(int analogPin, String name);
+	LightSensor(int analogPin, const char* name);
 	int getValue();
-	String getStringValue();
+	void getStringValue(char* buf, int buf_size);
 };
 
 #endif /* LIGHTSENSOR_H_ */

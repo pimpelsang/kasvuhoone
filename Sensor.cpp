@@ -8,7 +8,7 @@
 #include "Sensor.h"
 #include <Arduino.h>
 
-Sensor::Sensor(int analogPin, String name) {
+Sensor::Sensor(int analogPin, const char* name) {
 	this->analogPin = analogPin;
 	this->name = name;
 }
@@ -20,6 +20,6 @@ int Sensor::getRawValue() {
 	return analogRead(this->analogPin);
 }
 
-String Sensor::getName() {
+char* Sensor::getName() {
 	return this->name;
 }

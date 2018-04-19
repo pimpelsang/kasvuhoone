@@ -7,6 +7,7 @@
 
 #include <Arduino.h>
 #include "Event.h"
+#include <string.h>
 
 Event::Event(unsigned char event_number, time_t event_time) {
 	this->event_number = event_number;
@@ -20,7 +21,6 @@ void Event::printEventString(){
 	Serial.println(this->event_time);
 }
 
-String Event::getEventString() {
-	return String(this->event_number) + ":" + String(this->event_time);
+void Event::getEventString(char *buf, const int buf_size) {
+	snprintf(buf, buf_size, "%d%s%lu", this->event_number, ":", this->event_time);
 }
-

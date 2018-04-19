@@ -7,8 +7,9 @@
 
 #include "Parameter.h"
 #include <EEPROM.h>
+#include <stdio.h>
 
-Parameter::Parameter(String name, int address, int default_value, int min_value, int max_value, bool first_boot) {
+Parameter::Parameter(const char* name, int address, int default_value, int min_value, int max_value, bool first_boot) {
 	this->name = name;
 	this->address = address;
 	this->default_value = default_value;
@@ -26,13 +27,12 @@ int Parameter::getParameterValue() {
 	return this->value;
 }
 
-String Parameter::getParameterString() {
-	return this->name + ":" + String(this->value);
+char * Parameter::getParameterName() {
+	return this->name;
 }
 
 bool Parameter::setParameterValue(int value) {
 	if (this->max_value >= value && this->min_value <= value) {
-		Serial.println("SET PAR VALUE!");
 		int current_val;
 		EEPROM.get(this->address, current_val);
 		if (current_val != value) {

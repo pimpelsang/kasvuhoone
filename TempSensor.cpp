@@ -6,14 +6,16 @@
  */
 
 #include "TempSensor.h"
+#include <stdio.h>
 
-TempSensor::TempSensor(int analogPin, String name): Sensor(analogPin, name) {
+TempSensor::TempSensor(int analogPin, const char* name): Sensor(analogPin, name) {
 }
 
 int TempSensor::getValue() {
 	return Sensor::getRawValue(); // calls base class' functio
 }
 
-String TempSensor::getStringValue() {
-	return String(this->getValue()) + this->unit;
+void TempSensor::getStringValue(char* buf, int buf_size) {
+	// snprintf(buf, buf_size, "%d%s", this->getValue(), this->unit);
+	snprintf(buf, buf_size, "%d", this->getValue());
 }

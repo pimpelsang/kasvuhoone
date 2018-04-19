@@ -12,11 +12,10 @@
 
 class TempSensor: public Sensor {
 private:
-	const String unit = "°C";
 public:
-	TempSensor(int analogPin, String name);
+	TempSensor(int analogPin, const char* name);
 	int getValue();
-	String getStringValue();
+	void getStringValue(char* buf, int buf_size);
 };
 
 #endif /* TEMPSENSOR_H_ */

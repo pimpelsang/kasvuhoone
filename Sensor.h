@@ -8,19 +8,17 @@
 #ifndef SENSOR_H_
 #define SENSOR_H_
 
-#include <Arduino.h>
-
 class Sensor {
 
 private:
-	String name;
+	char* name;
 	int analogPin;
 
 public:
-	Sensor(int analogPin, String name);
+	Sensor(int analogPin, const char* name);
 	virtual ~Sensor();
 	int getRawValue();
-	String getName();
+	char* getName();
 };
 
 #endif /* SENSOR_H_ */

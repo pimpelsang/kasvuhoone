@@ -35,9 +35,7 @@ public:
 	Events(bool first_boot);
 	Event getLastEvent();
 	Event getEventByOffset(unsigned char offset);
-	void writeNewEvent(Event event);
-	void printAllEvents();
-	String getEventsString();
+	void writeNewEvent(const Event &event);
 };
 
 

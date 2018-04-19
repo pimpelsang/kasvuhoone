@@ -6,14 +6,16 @@
  */
 
 #include "LightSensor.h"
+#include <stdio.h>
 
-LightSensor::LightSensor(int analogPin, String name): Sensor(analogPin, name) {
+LightSensor::LightSensor(int analogPin, const char* name): Sensor(analogPin, name) {
 }
 
 int LightSensor::getValue() {
 	return float(Sensor::getRawValue()) / this->maxValue * 100;
 }
 
-String LightSensor::getStringValue() {
-	return String(this->getValue()) + this->unit;
+void LightSensor::getStringValue(char* buf, int buf_size) {
+	// snprintf(buf, buf_size, "%d%s", this->getValue(), this->unit);
+	snprintf(buf, buf_size, "%d", this->getValue());
 }

@@ -19,7 +19,7 @@ public:
 	unsigned char event_number;
 	time_t event_time;
 	void printEventString();
-	String getEventString();
+	void getEventString(char *buf, const int buf_size);
 };
 
 #endif /* EVENT_H_ */

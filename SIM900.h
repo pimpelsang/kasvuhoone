@@ -7,23 +7,27 @@
 
 #include <Time.h>
 #include <SoftwareSerial.h>
+#include <ArduinoJson.h>
 
 #ifndef SIM900_H_
 #define SIM900_H_
 
 class SIM900 {
 private:
-	SoftwareSerial * gsm_modem;
+
 	bool testGSM();
-	String getTimeString();
-	bool response(String expect, int wait);
-	bool command(String command);
-	bool command(String command, String expect);
-	bool command(String command, int wait);
-	bool command(String command, String expect, int wait);
-	void printResponse(String prefix);
-	String readResponse();
+
+	bool response(const char* expect, int wait);
+	bool command(const __FlashStringHelper *command);
+	bool command(const __FlashStringHelper *command, const char* expect);
+	bool command(const __FlashStringHelper *command, int wait);
+	bool command(const __FlashStringHelper *command, const char* expect, int wait);
+	void printResponse(const char* prefix);
+	bool getTimeString(char* buf, const int buf_size);
+	void readResponseToBuff(char * buf, const int buf_size);
 public:
+
+	SoftwareSerial * gsm_modem;
 	bool gprs_connected = false;
 	bool server_connected = false;
 	bool initialized = false;
@@ -33,7 +37,7 @@ public:
 	bool connectToGPRS();
 	bool connectToServer();
 	bool disconnectFromServer();
-	bool writeToServer(String message);
+	void writeJsonToServer(JsonObject* json);
 	void printIP();
 };
 

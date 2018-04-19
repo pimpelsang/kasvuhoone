@@ -15,10 +15,9 @@ class MoistureSensor: public Sensor {
 private:
 	const int maxValue = 1023;
 	const int minValue = 280;
-	const String unit = "%";
 public:
-	MoistureSensor(int analogPin, String name);
-	String getStringValue();
+	MoistureSensor(int analogPin, const char* name);
+	void getStringValue(char* buf, int buf_size);
 	int getValue();
 };
 
