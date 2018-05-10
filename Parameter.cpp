@@ -9,8 +9,8 @@
 #include <EEPROM.h>
 #include <stdio.h>
 
-Parameter::Parameter(const char* name, int address, int default_value, int min_value, int max_value, bool first_boot) {
-	this->name = name;
+
+Parameter::Parameter(int address, int default_value, int min_value, int max_value, bool first_boot) {
 	this->address = address;
 	this->default_value = default_value;
 	this->min_value = min_value;
@@ -27,17 +27,16 @@ int Parameter::getParameterValue() {
 	return this->value;
 }
 
-char * Parameter::getParameterName() {
-	return this->name;
+void Parameter::checkParameterValueToEEPROM() {
+	if (this->write_to_eeprom){
+		this->write_to_eeprom = false;
+		EEPROM.update(this->address, this->value);
+	}
 }
 
 bool Parameter::setParameterValue(int value) {
 	if (this->max_value >= value && this->min_value <= value) {
-		int current_val;
-		EEPROM.get(this->address, current_val);
-		if (current_val != value) {
-			EEPROM.put(this->address, value);
-		}
+		this->write_to_eeprom = true;
 		this->value = value;
 		return true;
 	} else {

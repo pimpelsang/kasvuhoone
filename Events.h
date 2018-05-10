@@ -10,9 +10,9 @@
 #ifndef EVENTS_H_
 #define EVENTS_H_
 
-#define EVENT_BOOTUP 0
-#define EVENT_RELAY_ON 1
-#define EVENT_RELAY_OFF 2
+#define EVENT_BOOTUP 1
+#define EVENT_RELAY_ON 2
+#define EVENT_RELAY_OFF 3
 
 #define EVENTS_START_ADDRESS 100
 #define EVENT_OFFSET_ADDRESS 99
@@ -32,6 +32,7 @@ private:
 	unsigned char last_event_eeprom_offset;
 	void clearEventsLog();
 public:
+	unsigned char last_event_number = 0;
 	Events(bool first_boot);
 	Event getLastEvent();
 	Event getEventByOffset(unsigned char offset);

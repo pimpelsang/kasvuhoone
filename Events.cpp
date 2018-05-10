@@ -54,6 +54,7 @@ void Events::writeNewEvent(const Event &event) {
 	if (this->last_event_eeprom_offset >= EVENTS_COUNT) {
 		this->last_event_eeprom_offset = 0;
 	}
+	this->last_event_number = event.event_number;
 	EEPROM.write(EVENTS_START_ADDRESS + this->last_event_eeprom_offset * EVENT_SIZE_BYTES, event.event_number);
 	EEPROM.put(EVENTS_START_ADDRESS + this->last_event_eeprom_offset * EVENT_SIZE_BYTES + 1, event.event_time);
 	EEPROM.write(EVENT_OFFSET_ADDRESS, this->last_event_eeprom_offset);

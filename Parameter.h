@@ -10,17 +10,17 @@
 
 class Parameter {
 private:
-	char* name;
 	int address;
 	int default_value;
 	int value;
 	int min_value;
 	int max_value;
+	bool write_to_eeprom = false;
 public:
-	Parameter(const char* name, int address, int default_value, int min_value, int max_value, bool first_boot);
+	Parameter(int address, int default_value, int min_value, int max_value, bool first_boot);
 	int getParameterValue();
 	bool setParameterValue(int value);
-	char* getParameterName();
+	void checkParameterValueToEEPROM();
 };
 
 #endif /* PARAMETER_H_ */

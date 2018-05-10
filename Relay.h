@@ -12,6 +12,7 @@ class Relay {
 private:
 	int digitalPin;
 	bool invertedLogic;
+	// state has to be true so deactivate can work when initializing Relay
 	bool state = true;
 public:
 	bool getState();

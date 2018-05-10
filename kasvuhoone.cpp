@@ -1,21 +1,56 @@
+#define TINY_GSM_MODEM_SIM900
+
+#include <TinyGsmClient.h>
+#include <ThingerTinyGSM.h>
+#include <SoftwareSerial.h>
 #include <Arduino.h>
 #include <EEPROM.h>
-#include <SoftwareSerial.h>
-#include <ArduinoJson.h>
+#include <Time.h>
+#include <FanController.h>
 
-#include "LightSensor.h"
 #include "MoistureSensor.h"
-#include "Parameter.h"
 #include "Relay.h"
-#include "TempSensor.h"
+#include "Parameter.h"
+#include "Battery.h"
 #include "Events.h"
 #include "Event.h"
-#include "SIM900.h"
-#include "Battery.h"
 
 #define HEARTBEAT_LED_PIN (13)
 #define EEPROM_INITIALIZED_VALUE 13
-#define MAX_INPUT 200
+
+// Sensor wire is plugged into port 2 on the Arduino.
+// For a list of available pins on your board,
+// please refer to: https://www.arduino.cc/en/Reference/AttachInterrupt
+#define SENSOR_PIN 4
+
+// Choose a threshold in milliseconds between readings.
+// A smaller value will give more updated results,
+// while a higher value will give more accurate and smooth readings
+#define SENSOR_THRESHOLD 1000
+
+#define PWM_PIN 6
+
+// Initialize library
+FanController fan(SENSOR_PIN, SENSOR_THRESHOLD, PWM_PIN);
+
+SoftwareSerial SerialAT(7, 8); // RX, TX
+
+// Your GPRS credentials
+// Leave empty, if missing user or pass
+const char apn[]  = "internet.emt.ee";
+const char user[] = "";
+const char pass[] = "";
+
+ThingerTinyGSM thing("kasvuhoone", "kasvuhoone", "$D5sAiZpkWJy", SerialAT);
+TinyGsm *gsm;
+MoistureSensor moist(0, "Moisture");
+Relay relee(5, true);
+Battery battery(3, "Battery");
+Events *event_manager;
+
+Parameter *relay_on_moisture_percent;
+Parameter *relay_off_moisture_percent;
+Parameter *fan_duty_cycle;
 
 volatile bool EVERY_SEC = false;
 // EVERY_MIN is set to true so it will be activated on first main loop iteration
@@ -24,10 +59,8 @@ volatile unsigned int TIMER_SEC = 0;
 
 unsigned char relay_on_counter = 0;
 unsigned char relay_off_counter = 0;
+unsigned char bootup_event = true;
 #define RELAY_TRIGGER_COUNT 5
-
-#define PARAMETERS_COUNT 2
-
 
 void initializeTimer1() {
 	  cli();//stop interrupts
@@ -48,224 +81,182 @@ void initializeTimer1() {
 	  sei();//allow interrupts
 }
 
-
-void process_data(const char * data, unsigned int buf_len)
-  {
-  // for now just display it
-  // (but you could compare it to some value, convert to an integer, etc.)
-	Serial.println (data);
-  }  // end of process_data
-
-void processIncomingByte (const byte inByte)
-  {
-  static char input_line [MAX_INPUT];
-  static unsigned int input_pos = 0;
-
-  switch (inByte)
-    {
-
-    case '\n':   // end of text
-      input_line [input_pos] = 0;  // terminating null byte
-
-      // terminator reached! process input_line here ...
-      process_data (input_line, input_pos);
-
-      // reset buffer for next time
-      input_pos = 0;
-      break;
-
-    case '\r':   // discard carriage return
-      break;
-
-    default:
-      // keep adding if not full ... allow for terminating null byte
-      if (input_pos < (MAX_INPUT - 1))
-        input_line [input_pos++] = inByte;
-      break;
-
-    }  // end of switch
-
-  } // end of processIncomingByte
-
-
-void printEventsToSerial(Events *event_manager) {
-	StaticJsonBuffer<EVENTS_COUNT * 25> jsonBuffer;
-	JsonObject& json = jsonBuffer.createObject();
-
-	char numbuf[10];
-
-	for (char i=0; i < EVENTS_COUNT; i++) {
-		Event event = event_manager->getEventByOffset(i);
-		if (event.event_number == 255) {
-			// no more filled events found
-			break;
-		}
-
-		snprintf(numbuf, 10, "%lu", event.event_time);
-
-		json[numbuf] = event.event_number;
-	}
-	json.prettyPrintTo(Serial);
-}
-
-void printParametersToSerial(Parameter parameters_list[]) {
-	StaticJsonBuffer<PARAMETERS_COUNT * 30> jsonBuffer;
-
-	JsonObject& json = jsonBuffer.createObject();
-
-	for (unsigned char i=0; i < PARAMETERS_COUNT; i++) {
-		json[parameters_list[i].getParameterName()] = parameters_list[i].getParameterValue();
-	}
-	json.prettyPrintTo(Serial);
+void powerUp()
+{
+	// if the GSM shield is turned off, this sequence should start it up
+	pinMode(9, OUTPUT);
+	digitalWrite(9,LOW);
+	delay(1000);
+	digitalWrite(9,HIGH);
+	delay(2000);
+	digitalWrite(9,LOW);
+	delay(3000);
 }
 
 void setup() {
-	  Serial.begin(9600);
-	  Serial.println(F("Init"));
-	  delay(100); //Allow for serial print to complete.
 
-	  // CHECK LAST EEPROM ADDRESS, TO CHECK IF FIRST BOOT OR NOT
+	Serial.begin(115200);
+	delay(10);
 
-	  bool first_boot = true;
-	  if (EEPROM.read(EEPROM.length() - 1) == EEPROM_INITIALIZED_VALUE) {
-		  first_boot = false;
-	  } else {
-		  // first boot, write initialization value to EEPROM so next boot first_boot will be false
-		  EEPROM.write(EEPROM.length() - 1, EEPROM_INITIALIZED_VALUE);
+	// Set GSM module baud rate
+	SerialAT.begin(19200);
+	delay(3000);
+
+	Serial.println("INIT..");
+
+	gsm = &thing.getTinyGsm();
+	if (!gsm->testAT()){
+		powerUp();
+	}
+
+	// CHECK LAST EEPROM ADDRESS, TO CHECK IF FIRST BOOT OR NOT
+
+	bool first_boot = true;
+	if (EEPROM.read(EEPROM.length() - 1) == EEPROM_INITIALIZED_VALUE) {
+		first_boot = false;
+	} else {
+		// first boot, write initialization value to EEPROM so next boot first_boot will be false
+		EEPROM.write(EEPROM.length() - 1, EEPROM_INITIALIZED_VALUE);
+	}
+
+	// Create Event Manager
+	event_manager = new Events(first_boot);
+
+	relay_on_moisture_percent = new Parameter(0 * sizeof(int), 10, 0, 100, first_boot);
+	relay_off_moisture_percent = new Parameter(1 * sizeof(int), 30, 0, 100, first_boot);
+	fan_duty_cycle = new Parameter(2 * sizeof(int), 25, 0, 100, first_boot);
+
+	thing.setAPN(apn, user, pass);
+
+	thing["relay"] << [](pson& in){
+	  if(in.is_empty()){
+		  in = relee.getState();
 	  }
-
-	  // initialize SIM900
-
-	  SoftwareSerial serial(7, 8);
-	  SIM900 gsm_shield(&serial);
-
-	  if (gsm_shield.initialize() == false) {
-		  Serial.println(F("SIM900 could not be initialized!"));
-	  } else {
-		  Serial.println(F("SIM900 board is ready"));
-
-		  if (gsm_shield.connectToGPRS() == true) {
-			  // successful connection to GPRS
-			  gsm_shield.printIP();
-			  gsm_shield.disconnectFromServer();
-		  }
+	  else{
+		  in ? relee.activate() : relee.deactivate();
+		  // digitalWrite(5, in ? LOW : HIGH);
 	  }
-
-	  // Create Event Manager
-	  Events event_manager(first_boot);
+	};
 
 
-	  // register bootup event
-	  // get current time from SIM900
-	  Event* bootup_event = new Event(EVENT_BOOTUP, gsm_shield.getCurrentTime());
-	  event_manager.writeNewEvent(*bootup_event);
-	  delete bootup_event;
+	thing["moistBat"] >> [](pson& out){
+	      out["moisture"] = moist.getValue();
+	      out["battery"] = battery.getValue();
+	      out["signal"] = gsm->getSignalQuality();
+	      out["fan"] = fan.getSpeed();
+	};
+
+	thing["event"] >> outputValue(event_manager->last_event_number);
 
 
-	  printEventsToSerial(&event_manager);
+	thing["relay_off_%"] << [](pson& in){
+		if(in.is_empty()){
+			in = relay_off_moisture_percent->getParameterValue();
+		}
+		else{
+			relay_off_moisture_percent->setParameterValue(in);
+		}
+	};
 
-	  // INITIALIZE PARAMETERS
-	  Parameter relay_on_moisture_percent("on_moisture", 0 * sizeof(int), 10, 0, 100, first_boot);
-	  Parameter relay_off_moisture_percent("off_moisture", 1 * sizeof(int), 30, 0, 100, first_boot);
-	  Parameter parameters_list[PARAMETERS_COUNT] = {relay_on_moisture_percent, relay_off_moisture_percent};
+	thing["relay_on_%"] << [](pson& in){
+		if(in.is_empty()){
+			in = relay_on_moisture_percent->getParameterValue();
+		}
+		else{
+			relay_on_moisture_percent->setParameterValue(in);
+		}
+	};
 
-	  printParametersToSerial(parameters_list);
+	thing["fan_duty_cycle"] << [](pson& in){
+		if(in.is_empty()){
+			in = fan_duty_cycle->getParameterValue();
+		}
+		else{
+			fan_duty_cycle->setParameterValue(in);
+		}
+	};
 
+	initializeTimer1();
 
+	fan.begin();
 
-	  // INITIALIZE SENSORS
-	  TempSensor temp(0, "Temperature");
-	  MoistureSensor moist(1, "Moisture");
-	  LightSensor lightsens(2, "Light");
-	  Relay relee(5, true);
-	  Battery battery(3, "Battery");
+	Serial.println("INIT DONE");
+}
 
-	  pinMode(HEARTBEAT_LED_PIN,OUTPUT);
+void loop() {
+	thing.handle();
 
-	  initializeTimer1();
+	if (EVERY_SEC == true) //Once every milliseconds
+	{
+	  EVERY_SEC = false;
+	  /* Toggle the LED */
+	  digitalWrite(HEARTBEAT_LED_PIN, !digitalRead(HEARTBEAT_LED_PIN));
 
-	  Serial.println(F("Init complete."));
-	  delay(100); //Allow for serial print to complete.
+	  Serial.print("FAN SPEED: ");
+	  Serial.println(fan.getSpeed());
 
-	  while (true) {
+	  Serial.print("FAN CYCLE: ");
+	  Serial.println(fan.getDutyCycle());
 
+	  Serial.print("FAN PAR: ");
+	  Serial.println(fan_duty_cycle->getParameterValue());
+	}
 
-		  while (gsm_shield.gsm_modem->available() > 0) {
-			  processIncomingByte(gsm_shield.gsm_modem->read());
-		  }
+	if (EVERY_MIN == true) {
+		EVERY_MIN = false;
 
+		fan.setDutyCycle(byte(fan_duty_cycle->getParameterValue()));
 
-
-		  if (EVERY_SEC == true) //Once every milliseconds
-		  {
-			  EVERY_SEC = false;
-			  /* Toggle the LED */
-			  digitalWrite(HEARTBEAT_LED_PIN, !digitalRead(HEARTBEAT_LED_PIN));
-		  }
-
-		  if (EVERY_MIN == true) {
-			  EVERY_MIN = false;
-
-			  StaticJsonBuffer<200> jsonBuffer;
-
-			  JsonObject& json = jsonBuffer.createObject();
-			  char tempbuf[10] = "";
-			  temp.getStringValue(tempbuf, 10);
-			  json[temp.getName()] = tempbuf;
-
-			  char batterybuf[10] = "";
-			  battery.getStringValue(batterybuf, 10);
-			  json[battery.getName()] = batterybuf;
-
-			  char moistbuf[10] = "";
-			  moist.getStringValue(moistbuf, 10);
-			  json[moist.getName()] = moistbuf;
-
-			  char lightbuf[10] = "";
-			  lightsens.getStringValue(lightbuf, 10);
-			  json[lightsens.getName()] = lightbuf;
-
-			  json.prettyPrintTo(Serial);
-
-			  if (gsm_shield.gprs_connected == true) {
-				  gsm_shield.server_connected = gsm_shield.connectToServer();
-				  if (gsm_shield.server_connected) {
-					  Serial.println(F("Server connected"));
-					  gsm_shield.writeJsonToServer(&json);
-				  } else {
-					  Serial.println(F("Could not connect"));
-				  }
-			  }
+		if (bootup_event) {
+			bootup_event = false;
+			Event bootup_event(EVENT_BOOTUP, 0);
+			event_manager->writeNewEvent(bootup_event);
+			thing.write_bucket("Events", "event");
+		}
 
 
-			  if (moist.getValue() < relay_on_moisture_percent.getParameterValue()) {
-				  relay_on_counter++;
-				  relay_off_counter = 0;
-				  if (relay_on_counter >= RELAY_TRIGGER_COUNT) {
-					  relay_on_counter = 0;
-					  if (relee.activate()) {
-						  // register relay ON event
-						  // get current time from SIM900
-						  Event relay_on_event(EVENT_RELAY_ON, gsm_shield.getCurrentTime());
-						  event_manager.writeNewEvent(relay_on_event);
-					  }
-				  }
-			  } else if (moist.getValue() >= relay_off_moisture_percent.getParameterValue()){
-				  relay_on_counter = 0;
-				  relay_off_counter++;
-				  if (relay_off_counter >= RELAY_TRIGGER_COUNT) {
-					  relay_off_counter = 0;
+		// CHECK IF ANY PARAMETER HAS CHANGED AND NEW VALUE HAS TO BE STORED TO EEPROM
+		relay_off_moisture_percent->checkParameterValueToEEPROM();
+		relay_on_moisture_percent->checkParameterValueToEEPROM();
+		fan_duty_cycle->checkParameterValueToEEPROM();
 
-					  if (relee.deactivate()) {
-						  // register relay OFF event
-						  // get current time from SIM900
-						  Event relay_off_event(EVENT_RELAY_OFF, gsm_shield.getCurrentTime());
-						  event_manager.writeNewEvent(relay_off_event);
-					  }
-				  }
-			  }
-		  }
-	  }
+		if (moist.getValue() < relay_on_moisture_percent->getParameterValue()) {
+			relay_on_counter++;
+			relay_off_counter = 0;
+			if (relay_on_counter >= RELAY_TRIGGER_COUNT) {
+				relay_on_counter = 0;
+
+				if (relee.activate()) {
+					// register relay ON event
+					// get current time from SIM900
+					// Event relay_on_event(EVENT_RELAY_ON, gsm_shield.getCurrentTime());
+					Serial.println(F("ACTIVATE RELAY"));
+					Event relay_on_event(EVENT_RELAY_ON, 0);
+					event_manager->writeNewEvent(relay_on_event);
+					Serial.println(event_manager->last_event_number);
+					thing.write_bucket("Events", "event");
+				}
+			}
+		} else if (moist.getValue() >= relay_off_moisture_percent->getParameterValue()){
+			relay_on_counter = 0;
+			relay_off_counter++;
+			if (relay_off_counter >= RELAY_TRIGGER_COUNT) {
+				relay_off_counter = 0;
+
+				if (relee.deactivate()) {
+					// register relay OFF event
+					// get current time from SIM900
+					//Event relay_off_event(EVENT_RELAY_OFF, gsm_shield.getCurrentTime());
+					Serial.println(F("DEACTIVATE RELAY"));
+					Event relay_off_event(EVENT_RELAY_OFF, 0);
+					event_manager->writeNewEvent(relay_off_event);
+					Serial.println(event_manager->last_event_number);
+					thing.write_bucket("Events", "event");
+				}
+			}
+		}
+	}
+
 }
 
 ISR(TIMER1_COMPA_vect){// timer1 interrupt 1Hz
@@ -276,4 +267,3 @@ ISR(TIMER1_COMPA_vect){// timer1 interrupt 1Hz
 		EVERY_MIN = true;
 	}
 }
-
