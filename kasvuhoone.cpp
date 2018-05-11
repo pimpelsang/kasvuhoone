@@ -14,6 +14,7 @@
 #include "Battery.h"
 #include "Events.h"
 #include "Event.h"
+#include "TempSensor.h"
 
 #define HEARTBEAT_LED_PIN (13)
 #define EEPROM_INITIALIZED_VALUE 13
@@ -43,9 +44,10 @@ const char pass[] = "";
 
 ThingerTinyGSM thing("kasvuhoone", "kasvuhoone", "$D5sAiZpkWJy", SerialAT);
 TinyGsm *gsm;
-MoistureSensor moist(0, "Moisture");
+MoistureSensor moist(0);
 Relay relee(5, true);
-Battery battery(3, "Battery");
+Battery battery(3);
+TempSensor temp(1);
 Events *event_manager;
 
 Parameter *relay_on_moisture_percent;
@@ -143,7 +145,7 @@ void setup() {
 	      out["moisture"] = moist.getValue();
 	      out["battery"] = battery.getValue();
 	      out["signal"] = gsm->getSignalQuality();
-	      out["fan"] = fan.getSpeed();
+	      out["temp"] = temp.getValue();
 	};
 
 	thing["event"] >> outputValue(event_manager->last_event_number);
@@ -192,20 +194,13 @@ void loop() {
 	  /* Toggle the LED */
 	  digitalWrite(HEARTBEAT_LED_PIN, !digitalRead(HEARTBEAT_LED_PIN));
 
-	  Serial.print("FAN SPEED: ");
-	  Serial.println(fan.getSpeed());
-
-	  Serial.print("FAN CYCLE: ");
-	  Serial.println(fan.getDutyCycle());
-
-	  Serial.print("FAN PAR: ");
-	  Serial.println(fan_duty_cycle->getParameterValue());
+	  if (fan_duty_cycle->getParameterChanged()) {
+		  fan.setDutyCycle(byte(fan_duty_cycle->getParameterValue()));
+	  }
 	}
 
 	if (EVERY_MIN == true) {
 		EVERY_MIN = false;
-
-		fan.setDutyCycle(byte(fan_duty_cycle->getParameterValue()));
 
 		if (bootup_event) {
 			bootup_event = false;

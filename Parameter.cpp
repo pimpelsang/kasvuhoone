@@ -28,19 +28,23 @@ int Parameter::getParameterValue() {
 }
 
 void Parameter::checkParameterValueToEEPROM() {
-	if (this->write_to_eeprom){
-		this->write_to_eeprom = false;
+	if (this->par_changed){
+		this->par_changed = false;
 		EEPROM.update(this->address, this->value);
 	}
 }
 
 bool Parameter::setParameterValue(int value) {
 	if (this->max_value >= value && this->min_value <= value) {
-		this->write_to_eeprom = true;
+		this->par_changed = true;
 		this->value = value;
 		return true;
 	} else {
 		return false;
 	}
+}
+
+bool Parameter::getParameterChanged() {
+	return this->par_changed;
 }
 

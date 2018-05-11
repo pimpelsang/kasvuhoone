@@ -11,14 +11,12 @@
 class Sensor {
 
 private:
-	char* name;
 	int analogPin;
 
 public:
-	Sensor(int analogPin, const char* name);
+	Sensor(int analogPin);
 	virtual ~Sensor();
 	int getRawValue();
-	char* getName();
 };
 
 #endif /* SENSOR_H_ */

@@ -13,9 +13,8 @@
 class TempSensor: public Sensor {
 private:
 public:
-	TempSensor(int analogPin, const char* name);
+	TempSensor(int analogPin);
 	int getValue();
-	void getStringValue(char* buf, int buf_size);
 };
 
 #endif /* TEMPSENSOR_H_ */

@@ -15,9 +15,8 @@ private:
 	const unsigned char maxVoltage = 15;
 	const int maxValue = 1023;
 public:
-	Battery(int analogPin, const char* name);
+	Battery(int analogPin);
 	float getValue();
-	void getStringValue(char* buf, int buf_size);
 };
 
 

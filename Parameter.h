@@ -15,12 +15,13 @@ private:
 	int value;
 	int min_value;
 	int max_value;
-	bool write_to_eeprom = false;
+	bool par_changed = false;
 public:
 	Parameter(int address, int default_value, int min_value, int max_value, bool first_boot);
 	int getParameterValue();
 	bool setParameterValue(int value);
 	void checkParameterValueToEEPROM();
+	bool getParameterChanged();
 };
 
 #endif /* PARAMETER_H_ */

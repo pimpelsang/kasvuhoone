@@ -16,8 +16,7 @@ private:
 	const int maxValue = 1023;
 	const int minValue = 280;
 public:
-	MoistureSensor(int analogPin, const char* name);
-	void getStringValue(char* buf, int buf_size);
+	MoistureSensor(int analogPin);
 	int getValue();
 };
 
