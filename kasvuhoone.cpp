@@ -6,7 +6,6 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <Time.h>
-#include <FanController.h>
 
 #include "MoistureSensor.h"
 #include "Relay.h"
@@ -15,24 +14,11 @@
 #include "Events.h"
 #include "Event.h"
 #include "TempSensor.h"
+#include "Fan.h"
 
 #define HEARTBEAT_LED_PIN (13)
 #define EEPROM_INITIALIZED_VALUE 13
 
-// Sensor wire is plugged into port 2 on the Arduino.
-// For a list of available pins on your board,
-// please refer to: https://www.arduino.cc/en/Reference/AttachInterrupt
-#define SENSOR_PIN 4
-
-// Choose a threshold in milliseconds between readings.
-// A smaller value will give more updated results,
-// while a higher value will give more accurate and smooth readings
-#define SENSOR_THRESHOLD 1000
-
-#define PWM_PIN 6
-
-// Initialize library
-FanController fan(SENSOR_PIN, SENSOR_THRESHOLD, PWM_PIN);
 
 SoftwareSerial SerialAT(7, 8); // RX, TX
 
@@ -49,6 +35,7 @@ Relay relee(5, true);
 Battery battery(3);
 TempSensor temp(1);
 Events *event_manager;
+Fan fan(6);
 
 Parameter *relay_on_moisture_percent;
 Parameter *relay_off_moisture_percent;
@@ -178,9 +165,16 @@ void setup() {
 		}
 	};
 
-	initializeTimer1();
+	thing["fan_boolean"] << [](pson& in){
+		if(in.is_empty()){
+		  in = fan.active;
+		}
+		else{
+		  in ? fan.activate(fan_duty_cycle->getParameterValue()) : fan.deactivate();
+		}
+	};
 
-	fan.begin();
+	initializeTimer1();
 
 	Serial.println("INIT DONE");
 }
@@ -195,7 +189,7 @@ void loop() {
 	  digitalWrite(HEARTBEAT_LED_PIN, !digitalRead(HEARTBEAT_LED_PIN));
 
 	  if (fan_duty_cycle->getParameterChanged()) {
-		  fan.setDutyCycle(byte(fan_duty_cycle->getParameterValue()));
+		  fan.setDutyCycle(fan_duty_cycle->getParameterValue());
 	  }
 	}
 
@@ -225,7 +219,6 @@ void loop() {
 					// register relay ON event
 					// get current time from SIM900
 					// Event relay_on_event(EVENT_RELAY_ON, gsm_shield.getCurrentTime());
-					Serial.println(F("ACTIVATE RELAY"));
 					Event relay_on_event(EVENT_RELAY_ON, 0);
 					event_manager->writeNewEvent(relay_on_event);
 					Serial.println(event_manager->last_event_number);
@@ -242,7 +235,6 @@ void loop() {
 					// register relay OFF event
 					// get current time from SIM900
 					//Event relay_off_event(EVENT_RELAY_OFF, gsm_shield.getCurrentTime());
-					Serial.println(F("DEACTIVATE RELAY"));
 					Event relay_off_event(EVENT_RELAY_OFF, 0);
 					event_manager->writeNewEvent(relay_off_event);
 					Serial.println(event_manager->last_event_number);
