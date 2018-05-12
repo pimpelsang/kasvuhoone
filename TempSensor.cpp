@@ -16,7 +16,7 @@
 #define THERMISTOR_RESISTANCE_ROOM_TEMP 1000
 #define ROOM_TEMP_KELVIN 298.15
 
-TempSensor::TempSensor(int analogPin): Sensor(analogPin) {
+TempSensor::TempSensor(unsigned char analogPin): Sensor(analogPin) {
 }
 /*
 (Ground) ----\/\/\/-------|-------\/\/\/---- V_supply

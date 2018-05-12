@@ -16,7 +16,6 @@
 #include "TempSensor.h"
 #include "Fan.h"
 
-#define HEARTBEAT_LED_PIN (13)
 #define EEPROM_INITIALIZED_VALUE 13
 
 
@@ -31,6 +30,7 @@ const char pass[] = "";
 ThingerTinyGSM thing("kasvuhoone", "kasvuhoone", "$D5sAiZpkWJy", SerialAT);
 TinyGsm *gsm;
 MoistureSensor moist(0);
+MoistureSensor moist2(2);
 Relay relee(5, true);
 Battery battery(3);
 TempSensor temp(1);
@@ -91,7 +91,7 @@ void setup() {
 	SerialAT.begin(19200);
 	delay(3000);
 
-	Serial.println("INIT..");
+	Serial.println(F("INIT.."));
 
 	gsm = &thing.getTinyGsm();
 	if (!gsm->testAT()){
@@ -123,13 +123,13 @@ void setup() {
 	  }
 	  else{
 		  in ? relee.activate() : relee.deactivate();
-		  // digitalWrite(5, in ? LOW : HIGH);
 	  }
 	};
 
 
 	thing["moistBat"] >> [](pson& out){
-	      out["moisture"] = moist.getValue();
+	      out["moisture1"] = moist.getValue();
+	      out["moisture2"] = moist2.getValue();
 	      out["battery"] = battery.getValue();
 	      out["signal"] = gsm->getSignalQuality();
 	      out["temp"] = temp.getValue();
@@ -176,7 +176,7 @@ void setup() {
 
 	initializeTimer1();
 
-	Serial.println("INIT DONE");
+	Serial.println(F("INIT DONE"));
 }
 
 void loop() {
@@ -185,12 +185,13 @@ void loop() {
 	if (EVERY_SEC == true) //Once every milliseconds
 	{
 	  EVERY_SEC = false;
-	  /* Toggle the LED */
-	  digitalWrite(HEARTBEAT_LED_PIN, !digitalRead(HEARTBEAT_LED_PIN));
 
 	  if (fan_duty_cycle->getParameterChanged()) {
 		  fan.setDutyCycle(fan_duty_cycle->getParameterValue());
 	  }
+
+	  Serial.print("FAN SPEED: ");
+	  Serial.println(fan_duty_cycle->getParameterValue());
 	}
 
 	if (EVERY_MIN == true) {

@@ -13,7 +13,7 @@
 class TempSensor: public Sensor {
 private:
 public:
-	TempSensor(int analogPin);
+	TempSensor(unsigned char analogPin);
 	int getValue();
 };
 

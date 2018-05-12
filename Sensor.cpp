@@ -8,7 +8,7 @@
 #include "Sensor.h"
 #include <Arduino.h>
 
-Sensor::Sensor(int analogPin) {
+Sensor::Sensor(unsigned char analogPin) {
 	this->analogPin = analogPin;
 }
 

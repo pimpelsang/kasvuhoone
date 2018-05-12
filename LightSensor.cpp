@@ -8,9 +8,11 @@
 #include "LightSensor.h"
 #include <stdio.h>
 
-LightSensor::LightSensor(int analogPin): Sensor(analogPin) {
+#define MAX_VALUE 1023
+
+LightSensor::LightSensor(unsigned char analogPin): Sensor(analogPin) {
 }
 
 int LightSensor::getValue() {
-	return float(Sensor::getRawValue()) / this->maxValue * 100;
+	return float(Sensor::getRawValue()) / MAX_VALUE * 100;
 }

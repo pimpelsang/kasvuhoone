@@ -8,6 +8,7 @@
 #include "Parameter.h"
 #include <EEPROM.h>
 #include <stdio.h>
+#include <Arduino.h>
 
 
 Parameter::Parameter(int address, int default_value, int min_value, int max_value, bool first_boot) {
@@ -30,6 +31,8 @@ int Parameter::getParameterValue() {
 void Parameter::checkParameterValueToEEPROM() {
 	if (this->par_changed){
 		this->par_changed = false;
+		Serial.print("PAR -> EEPROM: ");
+		Serial.println(this->address);
 		EEPROM.update(this->address, this->value);
 	}
 }

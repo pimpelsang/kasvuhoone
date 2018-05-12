@@ -8,9 +8,12 @@
 #include "MoistureSensor.h"
 #include <stdio.h>
 
-MoistureSensor::MoistureSensor(int analogPin): Sensor(analogPin) {
+#define MAX_VALUE 1023
+#define MIN_VALUE 280
+
+MoistureSensor::MoistureSensor(unsigned char analogPin): Sensor(analogPin) {
 }
 
 int MoistureSensor::getValue() {
-	return 100 - ((float(Sensor::getRawValue()) - this->minValue)/(this->maxValue - this->minValue) * 100);
+	return 100 - ((float(Sensor::getRawValue()) - MIN_VALUE)/(MAX_VALUE - MIN_VALUE) * 100);
 }

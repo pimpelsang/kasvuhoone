@@ -8,7 +8,7 @@
 #include "Relay.h"
 #include <Arduino.h>
 
-Relay::Relay(int digitalPin, bool invertedLogic) {
+Relay::Relay(unsigned char digitalPin, bool invertedLogic) {
 	// TODO Auto-generated constructor stub
 	this->digitalPin = digitalPin;
 	this->invertedLogic = invertedLogic;

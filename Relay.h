@@ -10,13 +10,13 @@
 
 class Relay {
 private:
-	int digitalPin;
+	unsigned char digitalPin;
 	bool invertedLogic;
 	// state has to be true so deactivate can work when initializing Relay
 	bool state = true;
 public:
 	bool getState();
-	Relay(int digitalPin, bool invertedLogic);
+	Relay(unsigned char digitalPin, bool invertedLogic);
 	virtual ~Relay();
 	bool activate();
 	bool deactivate();

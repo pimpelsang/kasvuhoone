@@ -14,7 +14,7 @@ class Fan {
 private:
 	FanController *fan;
 public:
-	Fan(int digitalPin);
+	Fan(unsigned char pwmPin);
 	bool active = false;
 	virtual ~Fan();
 	void activate(int duty_cycle);

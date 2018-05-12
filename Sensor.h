@@ -11,10 +11,10 @@
 class Sensor {
 
 private:
-	int analogPin;
+	unsigned char analogPin;
 
 public:
-	Sensor(int analogPin);
+	Sensor(unsigned char analogPin);
 	virtual ~Sensor();
 	int getRawValue();
 };

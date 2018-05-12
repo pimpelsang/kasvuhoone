@@ -12,9 +12,8 @@
 
 class LightSensor: public Sensor {
 private:
-	const int maxValue = 1023;
 public:
-	LightSensor(int analogPin);
+	LightSensor(unsigned char analogPin);
 	int getValue();
 };
 

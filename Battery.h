@@ -12,10 +12,8 @@
 
 class Battery: public Sensor {
 private:
-	const unsigned char maxVoltage = 15;
-	const int maxValue = 1023;
 public:
-	Battery(int analogPin);
+	Battery(unsigned char analogPin);
 	float getValue();
 };
 

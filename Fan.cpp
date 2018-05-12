@@ -17,7 +17,7 @@
 // please refer to: https://www.arduino.cc/en/Reference/AttachInterrupt
 #define SENSOR_PIN 4
 
-Fan::Fan(int pwmPin) {
+Fan::Fan(unsigned char pwmPin) {
 	// Initialize library
 	this->fan = new FanController(SENSOR_PIN, SENSOR_THRESHOLD, pwmPin);
 

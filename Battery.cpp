@@ -9,9 +9,12 @@
 #include <stdio.h>
 #include <math.h>
 
-Battery::Battery(int analogPin): Sensor(analogPin) {
+#define MAX_VOLTAGE 15
+#define MAX_VALUE 1023
+
+Battery::Battery(unsigned char analogPin): Sensor(analogPin) {
 }
 
 float Battery::getValue() {
-	return float(Sensor::getRawValue()) / this->maxValue * this->maxVoltage;
+	return float(Sensor::getRawValue()) / MAX_VALUE * MAX_VOLTAGE;
 }

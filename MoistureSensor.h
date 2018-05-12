@@ -13,10 +13,8 @@
 class MoistureSensor: public Sensor {
 
 private:
-	const int maxValue = 1023;
-	const int minValue = 280;
 public:
-	MoistureSensor(int analogPin);
+	MoistureSensor(unsigned char analogPin);
 	int getValue();
 };
 
