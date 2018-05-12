@@ -1,0 +1,7 @@
+avrdude -P /dev/ttyUSB1 -C /home/erki/.arduinocdt/packages/arduino/tools/avrdude/6.3.0-arduino9/etc/avrdude.conf -c arduino -p m328p -b 57600 -vvv -U flash:w:kasvuhoone.hex
+
+Muutuvad neist:
+
+1) -P /dev/ttyUSB1
+2) -C /home/erki/.arduinocdt/packages/arduino/tools/avrdude/6.3.0-arduino9/etc/avrdude.conf
+3) kasvuhoone.hex
