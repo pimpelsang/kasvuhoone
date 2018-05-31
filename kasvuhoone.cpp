@@ -47,7 +47,6 @@ volatile bool EVERY_MIN = true;
 volatile unsigned int TIMER_SEC = 0;
 
 unsigned char relay_on_counter = 0;
-unsigned char relay_off_counter = 0;
 unsigned char bootup_event = true;
 #define RELAY_TRIGGER_COUNT 5
 
@@ -190,8 +189,6 @@ void loop() {
 		  fan.setDutyCycle(fan_duty_cycle->getParameterValue());
 	  }
 
-	  Serial.print("FAN SPEED: ");
-	  Serial.println(fan_duty_cycle->getParameterValue());
 	}
 
 	if (EVERY_MIN == true) {
@@ -210,9 +207,19 @@ void loop() {
 		relay_on_moisture_percent->checkParameterValueToEEPROM();
 		fan_duty_cycle->checkParameterValueToEEPROM();
 
-		if (moist.getValue() < relay_on_moisture_percent->getParameterValue()) {
+		int min_moist = moist.getValue();
+		int max_moist = moist.getValue();
+
+		if (moist2.getValue() < min_moist) {
+			min_moist = moist2.getValue();
+		}
+
+		if (moist2.getValue() > max_moist) {
+			max_moist = moist2.getValue();
+		}
+
+		if (min_moist < relay_on_moisture_percent->getParameterValue()) {
 			relay_on_counter++;
-			relay_off_counter = 0;
 			if (relay_on_counter >= RELAY_TRIGGER_COUNT) {
 				relay_on_counter = 0;
 
@@ -226,21 +233,17 @@ void loop() {
 					thing.write_bucket("Events", "event");
 				}
 			}
-		} else if (moist.getValue() >= relay_off_moisture_percent->getParameterValue()){
+		} else if (max_moist >= relay_off_moisture_percent->getParameterValue()){
 			relay_on_counter = 0;
-			relay_off_counter++;
-			if (relay_off_counter >= RELAY_TRIGGER_COUNT) {
-				relay_off_counter = 0;
 
-				if (relee.deactivate()) {
-					// register relay OFF event
-					// get current time from SIM900
-					//Event relay_off_event(EVENT_RELAY_OFF, gsm_shield.getCurrentTime());
-					Event relay_off_event(EVENT_RELAY_OFF, 0);
-					event_manager->writeNewEvent(relay_off_event);
-					Serial.println(event_manager->last_event_number);
-					thing.write_bucket("Events", "event");
-				}
+			if (relee.deactivate()) {
+				// register relay OFF event
+				// get current time from SIM900
+				//Event relay_off_event(EVENT_RELAY_OFF, gsm_shield.getCurrentTime());
+				Event relay_off_event(EVENT_RELAY_OFF, 0);
+				event_manager->writeNewEvent(relay_off_event);
+				Serial.println(event_manager->last_event_number);
+				thing.write_bucket("Events", "event");
 			}
 		}
 	}
